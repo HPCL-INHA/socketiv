@@ -6,7 +6,7 @@
 int open(const char *pathname, int flags, mode_t mode) // open file
 {
     int fd = original_open(pathname, flags, mode);
-    socketiv_register_socket(sock, TYPE_GENERIC, NULL);
+    socketiv_register_socket(fd, TYPE_GENERIC, NULL);
 }
 
 int socket(int domain, int type, int protocol) // create socket
