@@ -4,8 +4,8 @@ FD_INFO *fd_list;
 int fd_list_size;
 void __attribute__((constructor)) socketiv_init();
 
-int socketiv_start_QoS();
-int socketiv_stop_QoS();
+int socketiv_start_qos();
+int socketiv_stop_qos();
 
 int socketiv_interrupt();
 int socketiv_wait();
