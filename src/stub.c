@@ -17,7 +17,7 @@ int socket(int domain, int type, int protocol) // create socket
     int sockfd = orig_socket(domain, type, protocol);
     if (sockfd < 0)
         return sockfd;
-    socketiv_register_socket(sockfd, TYPE_GENERIC, NULL);
+    socketiv_register_socket(sockfd, TYPE_IVSOCK, NULL);
     return sockfd;
 }
 

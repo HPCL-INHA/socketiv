@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#define VM_ADDR "192.168.122."
+
 typedef enum queue_size_mode // byte
 {
     QSM_1 = 2097152 // 2MB
@@ -56,15 +58,29 @@ typedef struct inter_vm_shmem
 
 typedef enum fd_type
 {
-    TYPE_INV = -1,
     TYPE_GENERIC = 0,
     TYPE_IVSOCK = 1
 } FD_TYPE;
+
 typedef struct fd_info
 {
     FD_TYPE fd_type;
     IVSOCK *ivsock_ptr;
 } FD_INFO;
+
+typedef struct socketiv {
+	enum mem_loc {
+		INVALID = -1,
+		LOCAL,
+		REMOTE
+	} loc;			// if > 0, memory is allocated remotely
+	// else if == 0, memory is allocated locally
+	// else if < 0, invalid
+	size_t size;		// size of shared memory
+	size_t len;		// ?
+	void *virt_addr;	// virtual address mapped to physical address of shared memory
+	int fd;			// file descriptor for later unlink()
+} SOCKETIV;
 
 int (*orig_open)(const char *, int, mode_t);
 int (*orig_socket)(int, int, int);
@@ -78,7 +94,7 @@ int socketiv_register_fd(int fd, FD_TYPE fd_type, const IVSOCK *ivsock_ptr);
 FD_TYPE socketiv_check_fd(int fd);
 int socketiv_unregister_fd(int fd);
 
-int socketiv_check_vm_subnet(const struct sockaddr *addr);
+bool socketiv_check_vm_subnet(const struct sockaddr *addr);
 int socketiv_accept(int sockfd);
 int socketiv_connect(int sockfd);
 
