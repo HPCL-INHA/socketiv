@@ -1,6 +1,8 @@
 #ifndef SOCKETIV_H
 #define SOCKETIV_H
 
+#define VM_ADDR "192.168.122."
+
 int (*orig_open) (const char *, int, mode_t);
 int (*orig_socket) (int, int, int);
 

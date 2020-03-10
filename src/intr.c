@@ -19,6 +19,7 @@ enum ivshmem_registers {
 	IVLiveList = 16
 };
 
+#define PHYS_ADDR 0x800000000
 #define doorbell_path "/dev/uio0"
 static int doorbell_fd;
 static void *doorbell_mmap;
@@ -63,4 +64,21 @@ void intr_init()
 		perror("Failed to mmap doorbell device path");
 		exit(1);
 	}
+
+	// Setup plain mmap for looking up read()/write() sizes
+	fd = open("/dev/mem", O_RDWR);
+	if (fd == -1) {
+		perror("Failed to open /dev/mem");
+		exit(1);
+	}
+
+        pagesize = getpagesize();
+        addr = PHYS_ADDR & (~(pagesize - 1));
+
+	plain_mmap = mmap(NULL, 256, PROT_READ | PROT_WRITE, MAP_SHARED, fd, addr);
+	if (plain_mmap == MAP_FAILED) {
+		perror("Failed to mmap plain device path");
+		exit(1);
+	}
+	close(fd);
 }
