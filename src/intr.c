@@ -30,7 +30,7 @@ void intr_send()
 	const unsigned short cmd = 0;
 	int msg = ((dest & 0xffff) << 16) + (cmd & 0xffff);
 
-	*((int*)(doorbell_mmap + Doorbell)) = msg;
+	*((int *)(doorbell_mmap + Doorbell)) = msg;
 }
 
 void intr_wait()
@@ -56,9 +56,9 @@ void intr_init()
 		perror("Failed to open doorbell device path");
 		exit(1);
 	}
-
 	// Setup doorbell mmap for sending interrupts
-	doorbell_mmap = mmap(NULL, 256, PROT_READ | PROT_WRITE, MAP_SHARED, doorbell_fd, 0);
+	doorbell_mmap =
+	    mmap(NULL, 256, PROT_READ | PROT_WRITE, MAP_SHARED, doorbell_fd, 0);
 	if (doorbell_mmap == MAP_FAILED) {
 		perror("Failed to mmap doorbell device path");
 		exit(1);

@@ -1,22 +1,21 @@
 #ifndef SOCKETIV_H
 #define SOCKETIV_H
 
-int (*orig_open)(const char *, int, mode_t);
-int (*orig_socket)(int, int, int);
+int (*orig_open) (const char *, int, mode_t);
+int (*orig_socket) (int, int, int);
 
-int (*orig_accept)(int, struct sockaddr *, socklen_t *);
-int (*orig_connect)(int, const struct sockaddr *, socklen_t);
+int (*orig_accept) (int, struct sockaddr *, socklen_t *);
+int (*orig_connect) (int, const struct sockaddr *, socklen_t);
 
-ssize_t (*orig_read)(int, void *, size_t);
-ssize_t (*orig_write)(int, void *, size_t);
+ssize_t(*orig_read) (int, void *, size_t);
+ssize_t(*orig_write) (int, void *, size_t);
 
-int (*orig_close)(int);
+int (*orig_close) (int);
 
-typedef enum socketiv_fd_type
-{
-    SOCKETIV_FD_TYPE_INV = 0,
-    SOCKETIV_FD_TYPE_GEN = 1,
-    SOCKETIV_FD_TYPE_IVSOCK = 2
+typedef enum socketiv_fd_type {
+	SOCKETIV_FD_TYPE_INV = 0,
+	SOCKETIV_FD_TYPE_GEN = 1,
+	SOCKETIV_FD_TYPE_IVSOCK = 2
 } SOCKETIV_FD_TYPE;
 
 void socketiv_register_fd(int fd, SOCKETIV_FD_TYPE fd_type);
