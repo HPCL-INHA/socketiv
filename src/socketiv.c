@@ -142,18 +142,6 @@ static inline int socketiv_remove_ivshmem(int sockfd)
 }
 #endif
 
-int socketiv_accept(int sockfd)
-{
-	// 클라이언트와 정보를 맞춰 socketiv_create_ivshmem()
-	// TODO
-}
-
-int socketiv_connect(int sockfd)
-{
-	// 서버와 정보를 맞춰 socketiv_create_ivshmem()
-	// TODO
-}
-
 // determine whether this address belongs to virtual network
 bool socketiv_check_vm_subnet(const struct sockaddr *addr)
 {
@@ -168,9 +156,6 @@ bool socketiv_check_vm_subnet(const struct sockaddr *addr)
 
 	return !strncmp(buf, VM_ADDR, strlen(VM_ADDR));
 }
-
-#if 0
-WTF?
 int socketiv_accept(int new_sockfd)
 {
 	//if(socketiv_create_ivshmem(sockfd, 무슨 인자?) || socketiv_alter_fd(fd, SOCKETIV_FD_TYPE_IVSOCK))
@@ -184,7 +169,6 @@ int socketiv_connect(int sockfd)
 	//      return EXIT_FAILURE;
 	//return EXIT_SUCCESS;
 }
-#endif
 
 ssize_t socketiv_read(int fd, void *buf, size_t count)
 {
