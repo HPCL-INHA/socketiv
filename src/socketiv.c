@@ -39,29 +39,36 @@ typedef struct inter_vm_socket {
 	SPD_THR_LVL speed_threshold_mode;
 	BURST_TMO_MODE burst_timeout_mode;
 
-	IVSM *ivsm_ptr;
+	IVSM *ivsm_ptr; // Hardcoded to PHYS_ADDR for now
 } IVSOCK;
+
 typedef struct inter_vm_shmem {
 	Q_SIZ_MODE host_size;
 	void *host_base;
-	void *host_rptr;
-	void *host_wptr;
+	ssize_t host_rlen;
+	ssize_t host_wlen;
 	Q_SIZ_MODE remote_size;
 	void *remote_base;
-	void *remote_rptr;
-	void *remote_wptr;
+	ssize_t remote_rlen;
+	ssize_t remote_wlen;
 	void *send_interrupt_uio;	// memory I/O for sending interrupt
 	int recv_interrupt_uio;	// file I/O for receiving interrupt
+
+	// TODO: ADD PADDING FOR ALIGNMENT
+	// char padding[];
 } IVSM;
 
 static SOCKETIV_FD_TYPE *fd_list;
+static IVSOCK *fd_map; // Wastes memory but oh well
 static size_t fd_list_reserve;
 static int fd_list_prev_size;
 static int fd_list_size;
 
 void __attribute__ ((constructor)) socketiv_init()
-{				// initialize SocketIV
-	fd_list = malloc(4 * sizeof(SOCKETIV_FD_TYPE));
+{
+	// initialize SocketIV
+	fd_list = calloc(4, sizeof(SOCKETIV_FD_TYPE));
+	fd_map = calloc(4, sizeof(IVSOCK));
 	fd_list_reserve = 4;
 	fd_list_prev_size = 2;
 	fd_list_size = 3;
@@ -96,12 +103,22 @@ void socketiv_register_fd(int fd, SOCKETIV_FD_TYPE fd_type)
 			    sizeof(SOCKETIV_FD_TYPE) * (fd_list_reserve * 2));
 		memset(fd_list + fd_list_reserve, SOCKETIV_FD_TYPE_INV,
 		       fd_list_reserve);
+
+		fd_map =
+		    realloc(fd_map,
+			    sizeof(IVSOCK) * (fd_list_reserve * 2));
+		memset(fd_map + fd_list_reserve, 0, fd_list_reserve);
+
 		fd_list_reserve *= 2;
 	}
+
 	if (fd >= fd_list_size) {
 		fd_list_prev_size = fd_list_size;
 		fd_list_size = fd + 1;
 	}
+
+	fd_map[fd]->ivsm_ptr = PHYS_ADDR; // XXX
+
 	socketiv_alter_fd(fd, fd_type);
 }
 
@@ -161,6 +178,8 @@ int socketiv_accept(int new_sockfd)
 	//if(socketiv_create_ivshmem(sockfd, 무슨 인자?) || socketiv_alter_fd(fd, SOCKETIV_FD_TYPE_IVSOCK))
 	//      return EXIT_FAILURE;
 	//return EXIT_SUCCESS;
+	// TODO
+	return 0;
 }
 
 int socketiv_connect(int sockfd)
@@ -168,21 +187,29 @@ int socketiv_connect(int sockfd)
 	//if(socketiv_create_ivshmem(sockfd, 무슨 인자?) || socketiv_alter_fd(fd, SOCKETIV_FD_TYPE_IVSOCK))
 	//      return EXIT_FAILURE;
 	//return EXIT_SUCCESS;
+	// TODO
+	return 0;
 }
 
 ssize_t socketiv_read(int fd, void *buf, size_t count)
 {
-	ssize_t len;
+	IVSM *ivsm_ptr = fd_map[fd]->ivsm_ptr;
+	ssize_t len, wlen;
 
 	// 인터럽트 모드 일 때: 인터럽트가 올 때 까지 wait -> 인터럽트가 발생하면 available 한 블록들 모두 read copy
-	if (mode == interrupt) {
+	/* if (mode == interrupt) */ {
 		// TODO: Calculate interrupt storm rate
-		intr_wait();
-		len = *(ssize_t*)plain_mmap;
-		memcpy(buf, plain_mmap + 256, len); // 256: HARDCODING ATM
+		// TODO: EOF & Loop handling??
+		for (len = 0; len <= count - blk_size; len += blk_size) {
+			intr_wait();
+			wlen = ivsm_ptr->host_wlen;
+			memcpy(buf + len, ivsm_ptr + sizeof(IVSM), wlen);
+			ivsm_ptr->host_rlen = len;
+		}
 		return len;
 	}
 
+/*
 	// 인터럽트가 과도할 때(즉 IVSOCK 내의 인터럽트 한계(count/s)를 넘긴 경우): IVSOCK 내의 기술된 폴링 모드로 전환
 	else {
 		// TODO: Calculate polling storm rate and adjust usleep value
@@ -192,6 +219,7 @@ ssize_t socketiv_read(int fd, void *buf, size_t count)
 		memcpy(buf, plain_mmap + 256, len); // 256: HARDCODING ATM
 		return len;
 	}
+*/
 
 	// 스루풋이 더욱 증가하여 threshold 를 초과할 시: IVSOCK 내의 기술된 폴링 모드(= 폴링 interval)를 다음 단계로 증가하여 interval 단축
 	// 스루풋이 하향: 이전 interval로 단축
@@ -202,29 +230,32 @@ ssize_t socketiv_read(int fd, void *buf, size_t count)
 
 ssize_t socketiv_write(int fd, const void *buf, size_t count)
 {
+	IVSM *ivsm_ptr = fd_map[fd]->ivsm_ptr;
+	ssize_t len;
+
 	// 인터럽트 모드 일 때: 쓰는 동안 블록 사이즈 별로 나눠 인터럽트
-	if (mode == interrupt) {
-		ssize_t len;
-		for (len = count; len > blk_size; len -= blk_size) {
-			*(ssize_t*)plain_mmap = blk_size;
-			memcpy(plain_mmap + 256, buf, blk_size);
+	/* if (mode == interrupt) */ {
+		ssize_t blk_size = fd_map[fd]->block_size_mode;
+		for (len = 0; len <= count - blk_size; len += blk_size) {
+			ivsm_ptr->host_wlen = len;
+			memcpy(ivsm_ptr + sizeof(IVSM) + len - blk_size, buf + len - blk_size, blk_size);
 			intr_send();
 		}
-		if (len) {
+		if (len != count) {
 			// Send remaining data
 			// TODO: 블록 사이즈 보다 작은 write의 경우: 지정된 delay time window 만큼 대기후에 인터럽트(이때는 메인 함수내에서 block 하지 않음)
-			*(ssize_t*)plain_mmap = len;
-			memcpy(plain_mmap + 256, buf, len);
+			ivsm_ptr->host_wlen = count - len;
+			memcpy(ivsm_ptr + sizeof(IVSM) + count - len - blk_size, buf + count - len - blk_size, blk_size);
 			intr_send();
 		}
 	}
 	// - 인터럽트 delay 중(즉 non-block으로서 메인함수로 돌아간 경우), socket에 read() 할 시 delay time window 축소 - 이런 경우가 발생할 때 마다 단계적으로 축소(반대의 경우는 단계적으로 회복)
 
-	{
+//	{
 	// 인터럽트가 과도할 때: reader를 polling mode로 전환 시킴
 	// 스루풋이 증가할 시: reader에게 더 짧은 polling interval mode로 전환하라 명령
 	// 스루풋이 하향: reader에게 더 긴 polling interval mode로 전환하라 명령
-	} copy from above
+//	} copy from above
 
 	// 일정 time window 동안 전송이 발생하지 않음: reader를 인터럽트 모드로 wait, 다시 인터럽트 모드로 전환
 	// 큐를 모두 채울때: 단계적으로 큐를 키움 - 이후, 충분히 쓰지 않으면 단계적으로 큐 축소
