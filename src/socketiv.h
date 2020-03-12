@@ -1,7 +1,7 @@
 #ifndef SOCKETIV_H
 #define SOCKETIV_H
 
-#define VM_ADDR "192.168.122."
+#include <sys/socket.h>
 
 int (*orig_open) (const char *, int, mode_t);
 int (*orig_socket) (int, int, int);
@@ -20,9 +20,9 @@ typedef enum socketiv_fd_type {
 	SOCKETIV_FD_TYPE_IVSOCK = 2
 } SOCKETIV_FD_TYPE;
 
-void socketiv_register_fd(int fd, SOCKETIV_FD_TYPE fd_type);
-SOCKETIV_FD_TYPE socketiv_check_fd(int fd);
-void socketiv_unregister_fd(int fd);
+void socketiv_register_generic_fd(int fd);
+SOCKETIV_FD_TYPE socketiv_get_fd_type(int fd);
+void socketiv_unregister_generic_fd(int fd);
 
 int socketiv_check_vm_subnet(const struct sockaddr *addr);
 int socketiv_accept(int new_sockfd);
