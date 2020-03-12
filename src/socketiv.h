@@ -24,7 +24,7 @@ void socketiv_register_fd(int fd, SOCKETIV_FD_TYPE fd_type);
 SOCKETIV_FD_TYPE socketiv_check_fd(int fd);
 void socketiv_unregister_fd(int fd);
 
-bool socketiv_check_vm_subnet(const struct sockaddr *addr);
+int socketiv_check_vm_subnet(const struct sockaddr *addr);
 int socketiv_accept(int new_sockfd);
 int socketiv_connect(int sockfd);
 

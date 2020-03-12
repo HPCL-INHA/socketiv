@@ -2,7 +2,7 @@ CC=gcc
 CFLAGS=-O3 -Wall -fpic
 
 vm: socketiv-vm.o stub.o
-  $(CC) $(CFLAGS) -shared -o socketiv-vm.so socketiv-vm.o stub.o
+	$(CC) $(CFLAGS) -shared -o socketiv-vm.so socketiv-vm.o stub.o
   
 host: socketiv-host.o stub.o
 	$(CC) $(CFLAGS) -shared -o socketiv-host.so socketiv-host.o stub.o

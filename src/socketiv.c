@@ -1,68 +1,36 @@
+#include <sys/socket.h>
+#include <sys/types.h>
+
 #include "socketiv.h"
 
-/* 값 조정 필요 */
-typedef enum queue_size_mode {	// byte
-	QSM_1 = 262144		// 256KB
-	QSM_2 = 2097152	// 2MB
-} QUEUE_SIZ_MODE;
-typedef enum block_size_mode {	// byte
-	BSM_2 = 4096		// 4KB
-	BSM_1 = 16384	// 16KB
-} BLK_SIZ_MODE;
-typedef enum interrupt_delay_mode {	// ns
-	IDM_1 = 0		// 0ns
-	IDM_2 = 1000	// 1us
-} INT_DELAY_MODE;
-typedef enum interrupt_threshold_mode {	// count/s
-	ITM_1 = 10		// 10/s
-	ITM_2 = 20		// 20/s
-} INT_THR_MODE;
-typedef enum polling_interval_mode {	// ns
-	PIM_1 = 1000,		// 1us
-	PIM_2 = 100000		// 100us
-} POLL_INTVL_MODE;
-typedef enum speed_threshold_mode {	// MB/s
-	STM_1 = 1024		// 1GB/s
-	STM_2 = 10240	// 10GB/s
-} SPD_THR_LVL;
-typedef enum burst_timeout_mode {	// us, 얘는 조정 메커니즘 필요없어 보임
-	BTM_1 = 1000		// 1ms
-} BURST_TMO_MODE;
-/* END */
+typedef struct fd_ivsock_map{
+	SOCKETIV_FD_TYPE fd_type;
+	IVSOCK ivsock;
+} FD_IVSOCK_MAP;
+typedef struct ivsm_meta {
+	void *cts_queue_addr;
+	size_t cts_size;
+	size_t cts_read_head;
+	size_t cts_write_head;
+	void *stc_queue_addr;
+	size_t stc_size;
+	size_t stc_read_head;
+	size_t stc_write_head;
+} IVSM_META;
+typedef struct ivsock {
+	// QoS 에 필요한 변수들
 
-typedef struct inter_vm_socket {
-	QUEUE_SIZ_MODE queue_size_mode;
-	BLK_SIZ_MODE block_size_mode;
-	INT_DELAY_MODE interrupt_delay_mode;
-	INT_THR_MODE interrupt_threshold_mode;
-	POLL_INTVL_MODE polling_interval_mode;
-	SPD_THR_LVL speed_threshold_mode;
-	BURST_TMO_MODE burst_timeout_mode;
+	// END
 
-	IVSM *ivsm_ptr; // Hardcoded to PHYS_ADDR for now
+	void *send_int_uio;	// address for sending interrupt
+	int recv_int_uio;	// file descriptor for receiving interrupt
+	IVSM_META *ivsm_addr;
 } IVSOCK;
 
-typedef struct inter_vm_shmem {
-	Q_SIZ_MODE host_size;
-	void *host_base;
-	ssize_t host_rlen;
-	ssize_t host_wlen;
-	Q_SIZ_MODE remote_size;
-	void *remote_base;
-	ssize_t remote_rlen;
-	ssize_t remote_wlen;
-	void *send_interrupt_uio;	// memory I/O for sending interrupt
-	int recv_interrupt_uio;	// file I/O for receiving interrupt
-
-	// TODO: ADD PADDING FOR ALIGNMENT
-	// char padding[];
-} IVSM;
-
-static SOCKETIV_FD_TYPE *fd_list;
-static IVSOCK *fd_map; // Wastes memory but oh well
-static size_t fd_list_reserve;
-static int fd_list_prev_size;
-static int fd_list_size;
+static FD_IVSOCK_MAP *fd_ivsock_map_tbl;
+static size_t fd_ivsock_map_tbl_reserve;
+static int fd_ivsock_map_tbl_prev_size;
+static int fd_ivsock_map_tbl_size;
 
 void __attribute__ ((constructor)) socketiv_init()
 {
