@@ -24,6 +24,7 @@ typedef struct ivsock {
 
 	int recv_int_uio;	// file descriptor for receiving interrupt
 	void *send_int_uio;	// address for sending interrupt
+	
 	IVSM_META *ivsm_addr;
 } IVSOCK;
 
