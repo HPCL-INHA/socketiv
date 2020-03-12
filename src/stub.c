@@ -1,62 +1,48 @@
+#include <assert.h>
+
 #include <sys/socket.h>
 #include <sys/types.h>
 
 #include "socketiv.h"
 
-int open(const char *pathname, int flags, mode_t mode)
-{				// open file
-	int fd = orig_open(pathname, flags, mode);
-	if (fd >= 0)
-		socketiv_register_generic_fd(fd);
-	return fd;
+int open(const char *pathname, int flags, mode_t mode) { // open file
+	return orig_open(pathname, flags, mode);
 }
 
-int socket(int domain, int type, int protocol)
-{				// create socket
-	int sockfd = orig_socket(domain, type, protocol);
-	if (sockfd >= 0)
-		socketiv_register_generic_fd(sockfd);
-	return sockfd;
+int socket(int domain, int type, int protocol) { // create socket
+	return orig_socket(domain, type, protocol);
 }
 
-int accept(int sockfd, struct sockaddr *addr, socklen_t * addrlen)
-{				// create new socket requested by passive socket
+int accept(int sockfd, struct sockaddr *addr, socklen_t * addrlen) { // create new socket requested by passive socket
 	int new_sockfd = orig_accept(sockfd, addr, addrlen);
 	if (new_sockfd >= 0)
 		if (socketiv_check_vm_subnet(addr))
-			socketiv_accept(new_sockfd);
+			assert(!socketiv_accept(new_sockfd));
 	return new_sockfd;
 }
 
-int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
-{				// connect to server socket
+int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) { // connect to server socket
 	int ret = orig_connect(sockfd, addr, addrlen);
 	if (ret == 0)
 		if (socketiv_check_vm_subnet(addr))
-			socketiv_connect(sockfd);
+			assert(!socketiv_connect(sockfd));
 	return ret;
 }
 
-ssize_t read(int fd, void *buf, size_t count)
-{				// read from socket
-	if (socketiv_get_fd_type(fd) == SOCKETIV_FD_TYPE_IVSOCK)
+ssize_t read(int fd, void *buf, size_t count) { // read from socket
+	if (socketiv_check_ivsock(fd))
 		return socketiv_read(fd, buf, count);
 	return orig_read(fd, buf, count);
 }
 
-ssize_t write(int fd, const void *buf, size_t count)
-{				// write to socket
-	if (socketiv_get_fd_type(fd) == SOCKETIV_FD_TYPE_IVSOCK)
+ssize_t write(int fd, const void *buf, size_t count) { // write to socket
+	if (socketiv_check_ivsock(fd))
 		return socketiv_write(fd, buf, count);
 	return orig_write(fd, buf, count);
 }
 
-int close(int fd)
-{				// close socket
-	int ret;
-	if (socketiv_get_fd_type(fd) == SOCKETIV_FD_TYPE_IVSOCK)
-		socketiv_close(fd);
-	if ((ret = orig_close(fd)) == 0)
-		socketiv_unregister_generic_fd(fd);
-	return ret;
+int close(int fd) { // close socket
+	if (socketiv_check_ivsock(fd))
+		assert(!socketiv_close(fd));
+	return orig_close(fd);
 }

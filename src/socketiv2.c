@@ -22,19 +22,6 @@ static inline int socketiv_remove_ivshmem(int sockfd)
 #endif
 
 // determine whether this address belongs to virtual network
-bool socketiv_check_vm_subnet(const struct sockaddr *addr)
-{
-#define IP_MAXLEN 64
-	char buf[IP_MAXLEN];
-
-	if (addr->sa_family != AF_INET)
-		return false; // non-IPv4
-
-	inet_ntop(AF_INET, &(((struct sockaddr_in *)addr)->sin_addr),
-			  buf, IP_MAXLEN);
-
-	return !strncmp(buf, VM_ADDR, strlen(VM_ADDR));
-}
 int socketiv_accept(int new_sockfd)
 {
 	//if(socketiv_create_ivshmem(sockfd, 무슨 인자?) || socketiv_alter_fd(fd, SOCKETIV_FD_TYPE_IVSOCK))

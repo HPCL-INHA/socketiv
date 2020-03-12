@@ -2,6 +2,7 @@
 #define SOCKETIV_H
 
 #include <sys/socket.h>
+#include <sys/types.h>
 
 int (*orig_open) (const char *, int, mode_t);
 int (*orig_socket) (int, int, int);
@@ -14,19 +15,11 @@ ssize_t(*orig_write) (int, void *, size_t);
 
 int (*orig_close) (int);
 
-typedef enum socketiv_fd_type {
-	SOCKETIV_FD_TYPE_INV = 0,
-	SOCKETIV_FD_TYPE_GEN = 1,
-	SOCKETIV_FD_TYPE_IVSOCK = 2
-} SOCKETIV_FD_TYPE;
-
-void socketiv_register_generic_fd(int fd);
-SOCKETIV_FD_TYPE socketiv_get_fd_type(int fd);
-void socketiv_unregister_generic_fd(int fd);
-
 int socketiv_check_vm_subnet(const struct sockaddr *addr);
 int socketiv_accept(int new_sockfd);
 int socketiv_connect(int sockfd);
+
+int socketiv_check_ivsock(int fd);
 
 ssize_t socketiv_read(int sockfd, void *buf, size_t count);
 ssize_t socketiv_write(int sockfd, void *buf, size_t count);
