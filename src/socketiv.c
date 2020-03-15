@@ -71,7 +71,8 @@ static inline int attach_new_ivsock_to_fd(int fd) {
 	// fd number 교환
 
 
-	// (장기적 수정 필요) construct an IVSOCK structure and IVSM device
+	// (지금 삽입 필요) construct an IVSOCK structure and IVSM device
+	// 여기에
 	fd_to_ivsock_map[fd] = ivsock;
 
 	return 0;
@@ -86,7 +87,8 @@ static inline int detach_ivsock_from_fd(int fd) {
 	// fd number 교환
 
 
-	// (장기적 수정 필요) destruct an IVSOCK structure and IVSM device
+	// (지금 삽입 필요) destruct an IVSOCK structure and IVSM device
+	// 여기에
 	free(fd_to_ivsock_map[fd]);
 	fd_to_ivsock_map[fd] = NULL;
 
