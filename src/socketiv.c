@@ -80,11 +80,15 @@ static inline int attach_new_ivsock_to_fd(int fd) {
 
 	// fd number 교환
 
-
 	// (지금 삽입 필요) construct an IVSOCK structure and IVSM device
 	// 여기에
 	IVSOCK *ivsock = calloc(1, sizeof(ivsock));
 	fd_to_ivsock_map[fd] = ivsock;
+
+	ivsock->blk_size = 256 * 1024;
+	ivsock->ivsm_addr = (void*)PHYS_ADDR;
+
+	intr_init();
 
 	return 0;
 }

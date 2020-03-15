@@ -21,8 +21,6 @@ enum ivshmem_registers {
 	IVLiveList = 16
 };
 
-#define PHYS_ADDR 0x800000000
-#define doorbell_path "/dev/uio0"
 static int doorbell_fd;
 static void *doorbell_mmap;
 static void *plain_mmap;
