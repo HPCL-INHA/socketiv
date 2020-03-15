@@ -59,8 +59,6 @@ void __attribute__((constructor)) socketiv_init() { // initialize SocketIV
 	orig_close = (int (*)(int))dlsym(RTLD_NEXT, "close");
 }
 static inline int attach_new_ivsock_to_fd(int fd) {
-	IVSOCK *ivsock = calloc(1, sizeof(ivsock));
-	
 	if (fd >= fd_to_ivsock_map_size) {
 		if (fd >= fd_to_ivsock_map_reserve) {
 			fd_to_ivsock_map = realloc(fd_to_ivsock_map, sizeof(fd_to_ivsock_map) * (fd_to_ivsock_map_reserve * 2));
@@ -76,6 +74,7 @@ static inline int attach_new_ivsock_to_fd(int fd) {
 
 	// (지금 삽입 필요) construct an IVSOCK structure and IVSM device
 	// 여기에
+	IVSOCK *ivsock = calloc(1, sizeof(ivsock));
 	fd_to_ivsock_map[fd] = ivsock;
 
 	return 0;
