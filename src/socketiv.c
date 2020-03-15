@@ -2,26 +2,33 @@
 #include <dlfcn.h>
 
 #include <errno.h>
+#include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <arpa/inet.h>
+
+#include <time.h>
 
 #include "socketiv.h"
 
 typedef struct ivsm {
+	bool int_mode;
 	void *cts_queue;
 	size_t cts_queue_size;
 	size_t cts_read_head;
 	size_t cts_write_head;
-	bool cts_int_enabled;
 	void *stc_queue;
 	size_t stc_queue_size;
 	size_t stc_read_head;
 	size_t stc_write_head;
-	bool stc_int_enabled;
 } IVSM;
+
+#define TIMESTAMP_ENTRIES 20
+#define STORM_RATE_MS 50
+#define POLL_US 500
 typedef struct ivsock {
 	int enabled;
 
@@ -31,6 +38,8 @@ typedef struct ivsock {
 	size_t int_strom_thresh;
 	size_t poll_intvl;
 	size_t poll_tmo;
+	int64_t timestamp[TIMESTAMP_ENTRIES];
+	int timestamp_index;
 	// END
 
 	int recv_int_uio;   // file descriptor for receiving interrupt
@@ -117,13 +126,18 @@ bool socketiv_check_ivsock(int fd) { // determine whether this file descriptor h
 		return 1;
 	return 0;
 }
+
+/*
 ssize_t socketiv_read(int sockfd, void *buf, size_t count) {
 	// 채우세요
 }
 ssize_t socketiv_write(int sockfd, const void *buf, size_t count) {
 	// 채우세요
 }
+*/
 
 int socketiv_close(int sockfd) { // close an inter-vm socket
 	return detach_ivsock_from_fd(sockfd);
 }
+
+#include "socketiv2.c"
