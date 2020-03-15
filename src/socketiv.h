@@ -20,7 +20,7 @@ bool socketiv_check_vm_subnet(const struct sockaddr *addr);
 int socketiv_accept(int new_sockfd);
 int socketiv_connect(int sockfd);
 
-int socketiv_check_ivsock(int fd);
+bool socketiv_check_ivsock(int fd);
 ssize_t socketiv_read(int sockfd, void *buf, size_t count);
 ssize_t socketiv_write(int sockfd, const void *buf, size_t count);
 

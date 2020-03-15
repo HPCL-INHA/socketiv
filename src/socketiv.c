@@ -113,7 +113,7 @@ int socketiv_connect(int sockfd) {
 	return attach_new_ivsock_to_fd(sockfd);
 }
 
-int socketiv_check_ivsock(int fd) { // determine whether this file descriptor has been paired with an inter-vm socket
+bool socketiv_check_ivsock(int fd) { // determine whether this file descriptor has been paired with an inter-vm socket
 	if (fd_to_ivsock_map[fd])
 		return 1;
 	return 0;
