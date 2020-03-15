@@ -9,6 +9,8 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 
+#include <pthread.h>
+
 #include "ivdistshm.h"
 
 enum ivshmem_registers {
@@ -32,6 +34,8 @@ void intr_send()
 	int msg = ((dest & 0xffff) << 16) + (cmd & 0xffff);
 
 	*((int *)(doorbell_mmap + Doorbell)) = msg;
+
+	// TODO: This can safely be async'ed, evaluate!
 }
 
 void intr_wait()
@@ -46,8 +50,17 @@ void intr_wait()
 	}
 }
 
+void intr_quirk(void *data)
+{
+	for (;;) {
+		usleep(100 * 1000);
+		intr_send();
+	}
+}
+
 void intr_init()
 {
+	pthread_t intr_quirk;
 	uint64_t pagesize, addr;
 	int fd;
 
@@ -81,4 +94,7 @@ void intr_init()
 		exit(1);
 	}
 	close(fd);
+
+	// Setup interrupt quirk thread to send occasional interrupts
+	pthread_create(&intr_quirk, NULL, intr_quirk, NULL);
 }
