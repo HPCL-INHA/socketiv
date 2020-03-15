@@ -1,7 +1,4 @@
-#include <assert.h>
-
 #include <sys/socket.h>
-#include <sys/types.h>
 
 #include "socketiv.h"
 
@@ -17,7 +14,7 @@ int accept(int sockfd, struct sockaddr *addr, socklen_t * addrlen) { // create n
 	int new_sockfd = orig_accept(sockfd, addr, addrlen);
 	if (new_sockfd >= 0)
 		if (socketiv_check_vm_subnet(addr))
-			assert(!socketiv_accept(new_sockfd));
+			socketiv_accept(new_sockfd);
 	return new_sockfd;
 }
 
@@ -25,7 +22,7 @@ int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) { // con
 	int ret = orig_connect(sockfd, addr, addrlen);
 	if (ret == 0)
 		if (socketiv_check_vm_subnet(addr))
-			assert(!socketiv_connect(sockfd));
+			socketiv_connect(sockfd);
 	return ret;
 }
 
@@ -43,6 +40,6 @@ ssize_t write(int fd, const void *buf, size_t count) { // write to socket
 
 int close(int fd) { // close socket
 	if (socketiv_check_ivsock(fd))
-		assert(!socketiv_close(fd));
+		socketiv_close(fd);
 	return orig_close(fd);
 }

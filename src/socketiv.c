@@ -5,15 +5,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <arpa/inet.h>
+
 #include "socketiv.h"
 
-typedef enum fd_type {
-	FD_TYPE_INV = 0,
-	FD_TYPE_GEN = 1,
-	FD_TYPE_IVSOCK = 2
-} FD_TYPE;
-typedef struct ivsm
-{
+typedef struct ivsm {
 	void *cts_queue;
 	size_t cts_queue_size;
 	size_t cts_read_head;
@@ -23,8 +19,7 @@ typedef struct ivsm
 	size_t stc_read_head;
 	size_t stc_write_head;
 } IVSM;
-typedef struct ivsock
-{
+typedef struct ivsock {
 	int enabled;
 
 	// QoS 에 필요한 변수들
@@ -34,14 +29,14 @@ typedef struct ivsock
 	size_t poll_intvl;
 	size_t poll_tmo;
 	// END
-	size_t blk_size;
+
 	int recv_int_uio;   // file descriptor for receiving interrupt
 	void *send_int_uio; // address for sending interrupt
 
 	IVSM *ivsm_addr;
 } IVSOCK;
 
-IVSOCK *fd_to_ivsock_map;
+IVSOCK **fd_to_ivsock_map;
 size_t fd_to_ivsock_map_reserve;
 int fd_to_ivsock_map_prev_size;
 int fd_to_ivsock_map_size;
@@ -57,43 +52,49 @@ void __attribute__((constructor)) socketiv_init() { // initialize SocketIV
 	orig_accept = (int (*)(int, struct sockaddr *, socklen_t *))dlsym(RTLD_NEXT, "accept");
 	orig_connect = (int (*)(int, const struct sockaddr *, socklen_t))dlsym(RTLD_NEXT, "connect");
 	orig_read = (ssize_t (*)(int, void *, size_t))dlsym(RTLD_NEXT, "read");
-	orig_write = (ssize_t (*)(int, void *, size_t))dlsym(RTLD_NEXT, "write");
+	orig_write = (ssize_t (*)(int, const void *, size_t))dlsym(RTLD_NEXT, "write");
 	orig_close = (int (*)(int))dlsym(RTLD_NEXT, "close");
 }
-static inline int socketiv_register_fd(int fd, SOCKETIV_FD_IVSOCK_PAIR fd_ivsock_pair) { // register a fd_type entry to global list
-	if (fd < 0 || (fd <))
-		return EINVAL;
-	if (fd >= fd_ivsock_map_tbl_size) {
-		if (fd >= fd_ivsock_map_tbl_reserve) {
-			fd_ivsock_map_tbl = realloc(fd_ivsock_map_tbl, sizeof(fd_ivsock_map_tbl) * (fd_ivsock_map_tbl_reserve * 2));
-			memset(fd_ivsock_map_tbl + fd_ivsock_map_tbl_reserve, 0, fd_ivsock_map_tbl_reserve);
-			fd_ivsock_map_tbl_reserve *= 2;
+static inline int attach_new_ivsock_to_fd(int fd) {
+	IVSOCK *ivsock = calloc(1, sizeof(ivsock));
+	
+	if (fd >= fd_to_ivsock_map_size) {
+		if (fd >= fd_to_ivsock_map_reserve) {
+			fd_to_ivsock_map = realloc(fd_to_ivsock_map, sizeof(fd_to_ivsock_map) * (fd_to_ivsock_map_reserve * 2));
+			memset(fd_to_ivsock_map + fd_to_ivsock_map_reserve, 0, fd_to_ivsock_map_reserve);
+			fd_to_ivsock_map_reserve *= 2;
 		}
-		fd_ivsock_map_tbl_prev_size = fd_ivsock_map_tbl_size;
-		fd_ivsock_map_tbl_size = fd + 1;
+		fd_to_ivsock_map_prev_size = fd_to_ivsock_map_size;
+		fd_to_ivsock_map_size = fd + 1;
 	}
-	fd_ivsock_map_tbl[fd].fd_type = fd_type;
-	fd_ivsock_map_tbl[fd].ivsock = ivsock;
+
+	// fd number 교환
+
+
+	// (장기적 수정 필요) construct an IVSOCK structure and IVSM device
+	fd_to_ivsock_map[fd] = ivsock;
+
 	return 0;
 }
-}
-static inline int unmap(int fd) { // register a fd_type entry of global list
-	if (socketiv_verify_fd(fd)){
-
-	}
-	return EBADF;
-	fd_ivsock_map_tbl[fd].fd_type = TYPE_INV;
-	if ((fd + 1) == fd_list_size)
-		if ((fd_list_prev_size <= fd_list_reserve / 2) && (fd_list_preserve > 4))
-		{
-			fd_list = realloc(fd_list, fd_list_reserve /= 2);
-			fd_list_size = fd_list_prev_size;
+static inline int detach_ivsock_from_fd(int fd) {
+	if ((fd + 1) == fd_to_ivsock_map_size)
+		if ((fd_to_ivsock_map_prev_size <= fd_to_ivsock_map_reserve / 2) && (fd_to_ivsock_map_reserve > 4)) {
+			fd_to_ivsock_map = realloc(fd_to_ivsock_map, fd_to_ivsock_map_reserve /= 2);
+			fd_to_ivsock_map_size = fd_to_ivsock_map_prev_size;
 		}
+
+	// fd number 교환
+
+
+	// (장기적 수정 필요) destruct an IVSOCK structure and IVSM device
+	free(fd_to_ivsock_map[fd]);
+	fd_to_ivsock_map[fd] = NULL;
+
+	return 0;
 }
 
-// 수정 필요
-#define VIRT_NET_ADDR_SPACE "192.168.122."
-int socketiv_check_vm_subnet(const struct sockaddr *addr) { // determine wheter this address belongs to a virtual network
+#define VIRT_NET_ADDR_SPACE "192.168.122"
+int socketiv_check_vm_subnet(const struct sockaddr *addr) { // (장기적 수정 필요) determine whether this address belongs to a virtual network
 	struct sockaddr_in *addr_in = (struct sockaddr_in *)addr;
 	char *addr_str = inet_ntoa(addr_in->sin_addr);
 	if (strstr(addr_str, VIRT_NET_ADDR_SPACE) == NULL)
@@ -101,21 +102,24 @@ int socketiv_check_vm_subnet(const struct sockaddr *addr) { // determine wheter 
 	return 0;
 }
 int socketiv_accept(int new_sockfd) {
-	return map_ivsock_to_fd(new_sockfd, socketiv_establish_ivsock());
+	return attach_new_ivsock_to_fd(new_sockfd);
 }
 int socketiv_connect(int sockfd) {
-	return map_ivsock_to_fd(new_sockfd, socketiv_establish_ivsock());
-}
-// END
-
-int socketiv_check_ivsock(int fd){
-	if (fd >= fd_to_ivsock_map_size || fd < 0 || !fd_to_ivsock_map[fd].enabled)
-		return 0;
-	return 1;
+	return attach_new_ivsock_to_fd(sockfd);
 }
 
-int socketiv_close(int fd) { // close a SocketIV socket
-	if (socketiv_remove_ivshmem(fd) || unmap_ivsock_from_fd(fd))
-		return EBADF;
-	return EXIT_SUCCESS;
+int socketiv_check_ivsock(int fd) { // determine whether this file descriptor has been paired with an inter-vm socket
+	if (fd_to_ivsock_map[fd])
+		return 1;
+	return 0;
+}
+ssize_t socketiv_read(int sockfd, void *buf, size_t count) {
+	// 채우세요
+}
+ssize_t socketiv_write(int sockfd, const void *buf, size_t count) {
+	// 채우세요
+}
+
+int socketiv_close(int sockfd) { // close an inter-vm socket
+	return detach_ivsock_from_fd(sockfd);
 }
