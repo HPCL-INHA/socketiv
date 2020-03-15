@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-O3 -Wall -fpic
+CFLAGS=-O3 -Wall -fpic -std=c99
 
 vm: socketiv-vm.o stub.o
 	$(CC) $(CFLAGS) -shared -o socketiv-vm.so socketiv-vm.o stub.o

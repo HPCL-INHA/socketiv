@@ -1,6 +1,8 @@
 #ifndef SOCKETIV_H
 #define SOCKETIV_H
 
+#include <stdbool.h>
+
 #include <sys/socket.h>
 
 int (*orig_open) (const char *, int, mode_t);
@@ -14,7 +16,7 @@ ssize_t(*orig_write) (int, const void *, size_t);
 
 int (*orig_close) (int);
 
-int socketiv_check_vm_subnet(const struct sockaddr *addr);
+bool socketiv_check_vm_subnet(const struct sockaddr *addr);
 int socketiv_accept(int new_sockfd);
 int socketiv_connect(int sockfd);
 

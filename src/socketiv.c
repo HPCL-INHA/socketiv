@@ -2,6 +2,7 @@
 #include <dlfcn.h>
 
 #include <errno.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -14,10 +15,12 @@ typedef struct ivsm {
 	size_t cts_queue_size;
 	size_t cts_read_head;
 	size_t cts_write_head;
+	bool cts_int_enabled;
 	void *stc_queue;
 	size_t stc_queue_size;
 	size_t stc_read_head;
 	size_t stc_write_head;
+	bool stc_int_enabled;
 } IVSM;
 typedef struct ivsock {
 	int enabled;
@@ -96,7 +99,7 @@ static inline int detach_ivsock_from_fd(int fd) {
 }
 
 #define VIRT_NET_ADDR_SPACE "192.168.122"
-int socketiv_check_vm_subnet(const struct sockaddr *addr) { // (장기적 수정 필요) determine whether this address belongs to a virtual network
+bool socketiv_check_vm_subnet(const struct sockaddr *addr) { // (장기적 수정 필요) determine whether this address belongs to a virtual network
 	struct sockaddr_in *addr_in = (struct sockaddr_in *)addr;
 	char *addr_str = inet_ntoa(addr_in->sin_addr);
 	if (strstr(addr_str, VIRT_NET_ADDR_SPACE) == NULL)
