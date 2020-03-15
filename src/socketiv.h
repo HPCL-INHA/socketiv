@@ -5,6 +5,8 @@
 
 #include <sys/socket.h>
 
+#include "intr.h"
+
 int (*orig_open) (const char *, int, mode_t);
 int (*orig_socket) (int, int, int);
 
