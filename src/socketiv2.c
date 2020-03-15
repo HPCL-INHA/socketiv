@@ -35,23 +35,6 @@ bool socketiv_check_vm_subnet(const struct sockaddr *addr)
 
 	return !strncmp(buf, VM_ADDR, strlen(VM_ADDR));
 }
-int socketiv_accept(int new_sockfd)
-{
-	//if(socketiv_create_ivshmem(sockfd, 무슨 인자?) || socketiv_alter_fd(fd, SOCKETIV_FD_TYPE_IVSOCK))
-	//      return EXIT_FAILURE;
-	//return EXIT_SUCCESS;
-	// TODO
-	return 0;
-}
-
-int socketiv_connect(int sockfd)
-{
-	//if(socketiv_create_ivshmem(sockfd, 무슨 인자?) || socketiv_alter_fd(fd, SOCKETIV_FD_TYPE_IVSOCK))
-	//      return EXIT_FAILURE;
-	//return EXIT_SUCCESS;
-	// TODO
-	return 0;
-}
 
 ssize_t socketiv_read(int fd, void *buf, size_t count)
 {
@@ -93,21 +76,22 @@ ssize_t socketiv_read(int fd, void *buf, size_t count)
 
 ssize_t socketiv_write(int fd, const void *buf, size_t count)
 {
-	IVSM *ivsm_ptr = fd_map[fd]->ivsm_ptr;
-	ssize_t len;
+	IVSM *ivsm_ptr = fd_ivsock_map_tbl[fd]->ivsock->ivsm_addr;
+	size_t len;
 
 	// 인터럽트 모드 일 때: 쓰는 동안 블록 사이즈 별로 나눠 인터럽트
 	/* if (mode == interrupt) */ {
-		ssize_t blk_size = fd_map[fd]->block_size_mode;
+		size_t blk_size = fd_ivsock_map_tbl[fd]->ivsock->blk_size;
 		for (len = 0; len <= count - blk_size; len += blk_size)
 		{
 			ivsm_ptr->host_wlen = len;
 			memcpy(ivsm_ptr + sizeof(IVSM) + len - blk_size, buf + len - blk_size, blk_size);
 			intr_send();
 		}
+
+		// Send remaining data
 		if (len != count)
-		{
-			// Send remaining data
+		{			
 			// TODO: 블록 사이즈 보다 작은 write의 경우: 지정된 delay time window 만큼 대기후에 인터럽트(이때는 메인 함수내에서 block 하지 않음)
 			ivsm_ptr->host_wlen = count - len;
 			memcpy(ivsm_ptr + sizeof(IVSM) + count - len - blk_size, buf + count - len - blk_size, blk_size);

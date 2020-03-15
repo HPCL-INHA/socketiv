@@ -26,7 +26,7 @@ typedef struct ivsock
 	// QoS 에 필요한 변수들
 
 	// END
-
+	size_t blk_size;
 	int recv_int_uio;   // file descriptor for receiving interrupt
 	void *send_int_uio; // address for sending interrupt
 
