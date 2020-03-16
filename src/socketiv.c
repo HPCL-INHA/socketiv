@@ -53,7 +53,7 @@ size_t fd_to_ivsock_map_reserve;
 int fd_to_ivsock_map_prev_size;
 int fd_to_ivsock_map_size;
 
-void __attribute__((constructor)) socketiv_init() { // initialize SocketIV
+static void __attribute__((constructor)) socketiv_init() { // initialize SocketIV
 	fd_to_ivsock_map = calloc(4, sizeof(fd_to_ivsock_map));
 	fd_to_ivsock_map_reserve = 4;
 	fd_to_ivsock_map_prev_size = 2;
@@ -67,6 +67,7 @@ void __attribute__((constructor)) socketiv_init() { // initialize SocketIV
 	orig_write = (ssize_t (*)(int, const void *, size_t))dlsym(RTLD_NEXT, "write");
 	orig_close = (int (*)(int))dlsym(RTLD_NEXT, "close");
 }
+
 static inline int attach_new_ivsock_to_fd(int fd) {
 	if (fd >= fd_to_ivsock_map_size) {
 		if (fd >= fd_to_ivsock_map_reserve) {
@@ -114,9 +115,9 @@ static inline int detach_ivsock_from_fd(int fd) {
 bool socketiv_check_vm_subnet(const struct sockaddr *addr) { // (장기적 수정 필요) determine whether this address belongs to a virtual network
 	struct sockaddr_in *addr_in = (struct sockaddr_in *)addr;
 	char *addr_str = inet_ntoa(addr_in->sin_addr);
-	if (strstr(addr_str, VIRT_NET_ADDR_SPACE) == NULL)
-		return 1;
-	return 0;
+
+	bool ret = !strncmp(addr_str, VIRT_NET_ADDR_SPACE, sizeof(VIRT_NET_ADDR_SPACE));
+	if (ret) puts("YES"); else puts("NO"); return ret;
 }
 int socketiv_accept(int new_sockfd) {
 	return attach_new_ivsock_to_fd(new_sockfd);

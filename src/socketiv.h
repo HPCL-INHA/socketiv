@@ -2,10 +2,14 @@
 #define SOCKETIV_H
 
 #include <stdbool.h>
+#include <stdint.h>
+#include <unistd.h>
 
 #include <sys/socket.h>
 
 #include "intr.h"
+
+#define unlikely(x)     __builtin_expect(!!(x), 0)
 
 int (*orig_open) (const char *, int, mode_t);
 int (*orig_socket) (int, int, int);

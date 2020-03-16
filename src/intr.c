@@ -11,7 +11,7 @@
 
 #include <pthread.h>
 
-#include "ivdistshm.h"
+#include "socketiv.h"
 
 enum ivshmem_registers {
 	IntrMask = 0,
@@ -48,7 +48,7 @@ void intr_wait()
 	}
 }
 
-void intr_quirk(void *data)
+void *intr_quirk_func(void *data)
 {
 	for (;;) {
 		usleep(100 * 1000);
@@ -68,6 +68,7 @@ void intr_init()
 		perror("Failed to open doorbell device path");
 		exit(1);
 	}
+
 	// Setup doorbell mmap for sending interrupts
 	doorbell_mmap =
 	    mmap(NULL, 256, PROT_READ | PROT_WRITE, MAP_SHARED, doorbell_fd, 0);
@@ -94,5 +95,5 @@ void intr_init()
 	close(fd);
 
 	// Setup interrupt quirk thread to send occasional interrupts
-	pthread_create(&intr_quirk, NULL, intr_quirk, NULL);
+	pthread_create(&intr_quirk, NULL, intr_quirk_func, NULL);
 }
