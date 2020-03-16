@@ -82,8 +82,8 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count)
 	blk_size = ivsock->blk_size;
 	for (len = 0; len <= count - blk_size; len += blk_size)
 	{
-		memcpy(ivsm + sizeof(IVSM) + len - blk_size, buf + len - blk_size, blk_size);
-		ivsm->stc_write_head = len;
+		memcpy(ivsm + sizeof(IVSM) + len, buf + len, blk_size);
+		ivsm->stc_write_head = len + blk_size;
 
 		// 인터럽트 모드 일 때: 쓰는 동안 블록 사이즈 별로 나눠 인터럽트
 		// Check for interrupt storm
@@ -99,16 +99,16 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count)
 			ivsm->int_mode = true;
 			intr_send();
 		}
+	}
 
-		// Send remaining data
-		if (len != count) {			
-			// TODO: 블록 사이즈 보다 작은 write의 경우: 지정된 delay time window 만큼 대기후에 인터럽트(이때는 메인 함수내에서 block 하지 않음)
-			memcpy(ivsm + sizeof(IVSM) + count - len - blk_size, buf + count - len - blk_size, blk_size);
-			ivsm->stc_write_head = count - len;
+	// Send remaining data
+	if (len != count) {
+		// TODO: 블록 사이즈 보다 작은 write의 경우: 지정된 delay time window 만큼 대기후에 인터럽트(이때는 메인 함수내에서 block 하지 않음)
+		memcpy(ivsm + sizeof(IVSM) + len, buf + len, count - len);
+		ivsm->stc_write_head = count;
 
-			if (ivsm->int_mode)
-				intr_send();
-		}
+		if (ivsm->int_mode)
+			intr_send();
 	}
 
 	return count;
