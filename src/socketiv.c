@@ -80,6 +80,8 @@ static inline int attach_new_ivsock_to_fd(int fd) {
 		fd_to_ivsock_map_prev_size = fd_to_ivsock_map_size;
 		fd_to_ivsock_map_size = fd + 1;
 	}
+	else if (fd >= fd_to_ivsock_map_prev_size)
+		fd_to_ivsock_map_prev_size = fd + 1;
 
 	// fd number 교환
 
@@ -131,9 +133,9 @@ int socketiv_connect(int sockfd) {
 }
 
 bool socketiv_check_ivsock(int fd) { // determine whether this file descriptor has been paired with an inter-vm socket
-	if (fd_to_ivsock_map[fd])
-		return 1;
-	return 0;
+	if (fd < fd_max_size && fd_to_ivsock_map[fd])
+		return true;
+	return false;
 }
 
 /*
