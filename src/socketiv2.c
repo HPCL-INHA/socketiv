@@ -34,13 +34,13 @@ ssize_t socketiv_read(int fd, void *buf, size_t count)
 		// TODO: EOF & Loop handling??
 		rlen = 0;
 		while (rlen != count) {
-			intr_wait();
 			wlen = ivsm->stc_write_head;
 			if (wlen > count)
 				wlen = count;
-			memcpy(buf + wlen - rlen, ivsm + sizeof(IVSM) + wlen - rlen, wlen);
+			memcpy(buf + wlen - rlen, (void*)ivsm + sizeof(IVSM) + wlen - rlen, wlen);
 			rlen = wlen;
 			ivsm->stc_read_head = rlen;
+			intr_wait();
 		}
 	} else {
 		printf("POLL MODE\n");
@@ -49,7 +49,7 @@ ssize_t socketiv_read(int fd, void *buf, size_t count)
 			wlen = ivsm->stc_write_head;
 			if (wlen > count)
 				wlen = count;
-			memcpy(buf + wlen - rlen, ivsm + sizeof(IVSM) + wlen - rlen, wlen);
+			memcpy(buf + wlen - rlen, (void*)ivsm + sizeof(IVSM) + wlen - rlen, wlen);
 			rlen = wlen;
 			ivsm->stc_read_head = rlen;
 			if (rlen != count)
@@ -84,7 +84,7 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count)
 	blk_size = ivsock->blk_size;
 	for (len = 0; len <= count - blk_size; len += blk_size)
 	{
-		memcpy(ivsm + sizeof(IVSM) + len, buf + len, blk_size);
+		memcpy((void*)ivsm + sizeof(IVSM) + len, buf + len, blk_size);
 		ivsm->stc_write_head = len + blk_size;
 
 		// 인터럽트 모드 일 때: 쓰는 동안 블록 사이즈 별로 나눠 인터럽트
@@ -106,7 +106,7 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count)
 	// Send remaining data
 	if (len != count) {
 		// TODO: 블록 사이즈 보다 작은 write의 경우: 지정된 delay time window 만큼 대기후에 인터럽트(이때는 메인 함수내에서 block 하지 않음)
-		memcpy(ivsm + sizeof(IVSM) + len, buf + len, count - len);
+		memcpy((void*)ivsm + sizeof(IVSM) + len, buf + len, count - len);
 		ivsm->stc_write_head = count;
 
 		if (!ivsm->poll_mode)
