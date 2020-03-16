@@ -133,7 +133,7 @@ int socketiv_connect(int sockfd) {
 }
 
 bool socketiv_check_ivsock(int fd) { // determine whether this file descriptor has been paired with an inter-vm socket
-	if (fd < fd_max_size && fd_to_ivsock_map[fd])
+	if (fd < fd_to_ivsock_map_size && fd_to_ivsock_map[fd])
 		return true;
 	return false;
 }
