@@ -17,7 +17,7 @@
 #include "intr.c"
 
 typedef struct ivsm {
-	bool int_mode;
+	bool poll_mode;
 	void *cts_queue;
 	size_t cts_queue_size;
 	size_t cts_read_head;
@@ -92,7 +92,7 @@ static inline int attach_new_ivsock_to_fd(int fd) {
 
 	intr_init();
 
-	ivsock->blk_size = 256 * 1024;
+	ivsock->blk_size = 256;
 	ivsock->ivsm_addr = plain_mmap; //(void*)PHYS_ADDR;
 
 	return 0;

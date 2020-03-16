@@ -28,7 +28,8 @@ ssize_t socketiv_read(int fd, void *buf, size_t count)
 	printf("%p\n", ivsm);
 
 	// 인터럽트 모드 일 때: 인터럽트가 올 때 까지 wait -> 인터럽트가 발생하면 available 한 블록들 모두 read copy
-	if (ivsm->int_mode) {
+	if (!ivsm->poll_mode) {
+		printf("INTR MODE\n");
 		// TODO: Calculate interrupt storm rate
 		// TODO: EOF & Loop handling??
 		rlen = 0;
@@ -42,6 +43,7 @@ ssize_t socketiv_read(int fd, void *buf, size_t count)
 			ivsm->stc_read_head = rlen;
 		}
 	} else {
+		printf("POLL MODE\n");
 		rlen = 0;
 		while (rlen != count) {
 			wlen = ivsm->stc_write_head;
@@ -91,12 +93,12 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count)
 		ivsock->timestamp_index = (ivsock->timestamp_index + 1) % TIMESTAMP_ENTRIES;
 		ivsock->timestamp[ivsock->timestamp_index] = time;
 		if (ivsock->timestamp[(ivsock->timestamp_index + 1) % TIMESTAMP_ENTRIES] - time < STORM_RATE_MS) {
-			if (ivsm->int_mode) {
-				ivsm->int_mode = false;
+			if (!ivsm->poll_mode) {
+				ivsm->poll_mode = true;
 				intr_send();
 			}
 		} else {
-			ivsm->int_mode = true;
+			ivsm->poll_mode = false;
 			intr_send();
 		}
 	}
@@ -107,7 +109,7 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count)
 		memcpy(ivsm + sizeof(IVSM) + len, buf + len, count - len);
 		ivsm->stc_write_head = count;
 
-		if (ivsm->int_mode)
+		if (!ivsm->poll_mode)
 			intr_send();
 	}
 
