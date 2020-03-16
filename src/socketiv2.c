@@ -25,6 +25,8 @@ ssize_t socketiv_read(int fd, void *buf, size_t count)
 	IVSM *ivsm = ivsock->ivsm_addr;
 	size_t rlen, wlen;
 
+	printf("%p\n", ivsm);
+
 	// 인터럽트 모드 일 때: 인터럽트가 올 때 까지 wait -> 인터럽트가 발생하면 available 한 블록들 모두 read copy
 	if (ivsm->int_mode) {
 		// TODO: Calculate interrupt storm rate

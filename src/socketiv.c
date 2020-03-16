@@ -14,6 +14,8 @@
 
 #include "socketiv.h"
 
+#include "intr.c"
+
 typedef struct ivsm {
 	bool int_mode;
 	void *cts_queue;
@@ -83,17 +85,19 @@ static inline int attach_new_ivsock_to_fd(int fd) {
 
 	// (지금 삽입 필요) construct an IVSOCK structure and IVSM device
 	// 여기에
-	IVSOCK *ivsock = calloc(1, sizeof(ivsock));
+	IVSOCK *ivsock = calloc(1, sizeof(IVSOCK));
 	fd_to_ivsock_map[fd] = ivsock;
 
-	ivsock->blk_size = 256 * 1024;
-	ivsock->ivsm_addr = (void*)PHYS_ADDR;
-
 	intr_init();
+
+	ivsock->blk_size = 256 * 1024;
+	ivsock->ivsm_addr = plain_mmap; //(void*)PHYS_ADDR;
 
 	return 0;
 }
 static inline int detach_ivsock_from_fd(int fd) {
+	return 0; // NOOP ATM
+
 	if ((fd + 1) == fd_to_ivsock_map_size)
 		if ((fd_to_ivsock_map_prev_size <= fd_to_ivsock_map_reserve / 2) && (fd_to_ivsock_map_reserve > 4)) {
 			fd_to_ivsock_map = realloc(fd_to_ivsock_map, fd_to_ivsock_map_reserve /= 2);
@@ -116,7 +120,7 @@ bool socketiv_check_vm_subnet(const struct sockaddr *addr) { // (장기적 수�
 	struct sockaddr_in *addr_in = (struct sockaddr_in *)addr;
 	char *addr_str = inet_ntoa(addr_in->sin_addr);
 
-	bool ret = !strncmp(addr_str, VIRT_NET_ADDR_SPACE, sizeof(VIRT_NET_ADDR_SPACE));
+	bool ret = !strncmp(addr_str, VIRT_NET_ADDR_SPACE, strlen(VIRT_NET_ADDR_SPACE));
 	if (ret) puts("YES"); else puts("NO"); return ret;
 }
 int socketiv_accept(int new_sockfd) {
