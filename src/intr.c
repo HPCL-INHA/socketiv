@@ -27,7 +27,7 @@ static void *plain_mmap;
 
 void intr_send()
 {
-	const unsigned short dest = 1;
+	const unsigned short dest = 0;
 	const unsigned short cmd = 0;
 	int msg = ((dest & 0xffff) << 16) + (cmd & 0xffff);
 

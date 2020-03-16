@@ -79,11 +79,12 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count)
 	IVSOCK *ivsock = fd_to_ivsock_map[fd];
 	IVSM *ivsm = ivsock->ivsm_addr;
 	size_t len, blk_size;
-	int64_t time;
+	int64_t time, prev;
 
 	blk_size = ivsock->blk_size;
 	for (len = 0; len <= count - blk_size; len += blk_size)
 	{
+		printf("WRITE: %p, %zu, %zu\n", (void*)ivsm + sizeof(IVSM) + len, len, blk_size);
 		memcpy((void*)ivsm + sizeof(IVSM) + len, buf + len, blk_size);
 		ivsm->stc_write_head = len + blk_size;
 
@@ -92,15 +93,19 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count)
 		time = getmstime();
 		ivsock->timestamp_index = (ivsock->timestamp_index + 1) % TIMESTAMP_ENTRIES;
 		ivsock->timestamp[ivsock->timestamp_index] = time;
-		if (ivsock->timestamp[(ivsock->timestamp_index + 1) % TIMESTAMP_ENTRIES] - time < STORM_RATE_MS) {
+		prev = ivsock->timestamp[(ivsock->timestamp_index + 1) % TIMESTAMP_ENTRIES];
+		if (prev && (time - prev > STORM_RATE_MS)) {
 			if (!ivsm->poll_mode) {
+				printf("POLL MODE\n");
 				ivsm->poll_mode = true;
 				intr_send();
 			}
 		} else {
+			printf("INTR MODE\n");
 			ivsm->poll_mode = false;
 			intr_send();
 		}
+		ivsock->timestamp_index++;
 	}
 
 	// Send remaining data
