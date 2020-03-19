@@ -79,13 +79,14 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count)
 	IVSOCK *ivsock = fd_to_ivsock_map[fd];
 	IVSM *ivsm = ivsock->ivsm_addr;
 
-	static const struct timespec a = { 0, 1 };
-
 	memcpy((void*)ivsm + sizeof(IVSM), buf, count);
 
-	ivsm->sender_ack = 1;
-	while (!ivsm->reader_ack) putchar('\0');//nanosleep(&a, NULL); //usleep(10);
+	do {
+		intr_send(0);
+	} while (!ivsm->reader_ack);
 	ivsm->reader_ack = 0;
+	intr_wait();
+	ivsm->sender_ack = 1;
 
 	return count;
 }
