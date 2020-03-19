@@ -25,9 +25,8 @@ static int doorbell_fd;
 static void *doorbell_mmap;
 static void *plain_mmap;
 
-void intr_send()
+void intr_send(const unsigned short dest)
 {
-	const unsigned short dest = 0;
 	const unsigned short cmd = 0;
 	int msg = ((dest & 0xffff) << 16) + (cmd & 0xffff);
 
@@ -52,14 +51,14 @@ void *intr_quirk_func(void *data)
 {
 	for (;;) {
 		usleep(100 * 1000);
-		intr_send();
+//		intr_send();
 	}
 }
 
 void intr_init()
 {
 	pthread_t intr_quirk;
-	uint64_t pagesize, addr;
+	uint64_t pagesize, addr, len;
 	int fd;
 
 	// Setup doorbell fd for receiving interrupts
@@ -86,8 +85,9 @@ void intr_init()
 
         pagesize = getpagesize();
         addr = PHYS_ADDR & (~(pagesize - 1));
+	len = (PHYS_ADDR & (pagesize - 1)) + 1024L * 1024L * 1024L;
 
-	plain_mmap = mmap(NULL, 256, PROT_READ | PROT_WRITE, MAP_SHARED, fd, addr);
+	plain_mmap = mmap(NULL, len, PROT_READ | PROT_WRITE, MAP_SHARED, fd, addr);
 	if (plain_mmap == MAP_FAILED) {
 		perror("Failed to mmap plain device path");
 		exit(1);
@@ -95,5 +95,5 @@ void intr_init()
 	close(fd);
 
 	// Setup interrupt quirk thread to send occasional interrupts
-	pthread_create(&intr_quirk, NULL, intr_quirk_func, NULL);
+//	pthread_create(&intr_quirk, NULL, intr_quirk_func, NULL);
 }
