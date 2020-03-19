@@ -16,8 +16,8 @@
 
 #include "intr.c"
 
-typedef volatile struct ivsm {
-	int writer_ack;
+typedef struct ivsm {
+	int sender_ack;
 	int reader_ack;
 	bool poll_mode;
 	void *cts_queue;
@@ -33,7 +33,7 @@ typedef volatile struct ivsm {
 #define TIMESTAMP_ENTRIES 20
 #define STORM_RATE_MS 50
 #define POLL_US 500
-typedef volatile struct ivsock {
+typedef struct ivsock {
 	int enabled;
 
 	// QoS 에 필요한 변수들
@@ -96,7 +96,7 @@ static inline int attach_new_ivsock_to_fd(int fd) {
 
 	ivsock->blk_size = 256 * 1024;
 	ivsock->ivsm_addr = plain_mmap; //(void*)PHYS_ADDR;
-	//memset(plain_mmap, 0, sizeof(IVSOCK));
+	memset(plain_mmap, 0, sizeof(IVSOCK));
 
 	return 0;
 }
