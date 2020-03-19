@@ -96,7 +96,7 @@ static inline int attach_new_ivsock_to_fd(int fd) {
 
 	ivsock->blk_size = 256 * 1024;
 	ivsock->ivsm_addr = plain_mmap; //(void*)PHYS_ADDR;
-	memset(plain_mmap, 0, sizeof(IVSOCK));
+	//memset(plain_mmap, 0, sizeof(IVSOCK));
 
 	return 0;
 }
