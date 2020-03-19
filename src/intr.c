@@ -41,6 +41,8 @@ void intr_wait()
 	ssize_t len;
 	int buf;
 
+	printf("INTR_WAIT\n");
+
 	len = read(doorbell_fd, &buf, sizeof(buf));
 	if (unlikely(len != sizeof(buf))) {
 		perror("Interrupt received size mismatch");
@@ -59,7 +61,7 @@ void *intr_quirk_func(void *data)
 void intr_init()
 {
 	pthread_t intr_quirk;
-	uint64_t pagesize, addr;
+	uint64_t pagesize, addr, len;
 	int fd;
 
 	// Setup doorbell fd for receiving interrupts
@@ -86,8 +88,9 @@ void intr_init()
 
         pagesize = getpagesize();
         addr = PHYS_ADDR & (~(pagesize - 1));
+	len = (PHYS_ADDR & (pagesize - 1)) + 1024L * 1024L * 1024L;
 
-	plain_mmap = mmap(NULL, 256, PROT_READ | PROT_WRITE, MAP_SHARED, fd, addr);
+	plain_mmap = mmap(NULL, len, PROT_READ | PROT_WRITE, MAP_SHARED, fd, addr);
 	if (plain_mmap == MAP_FAILED) {
 		perror("Failed to mmap plain device path");
 		exit(1);

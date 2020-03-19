@@ -23,38 +23,36 @@ ssize_t socketiv_read(int fd, void *buf, size_t count)
 {
 	IVSOCK *ivsock = fd_to_ivsock_map[fd];
 	IVSM *ivsm = ivsock->ivsm_addr;
-	size_t rlen, wlen;
+	size_t rlen, wlen, len;
 
 	printf("%p\n", ivsm);
 
 	// 인터럽트 모드 일 때: 인터럽트가 올 때 까지 wait -> 인터럽트가 발생하면 available 한 블록들 모두 read copy
-	if (!ivsm->poll_mode) {
-		printf("INTR MODE\n");
-		// TODO: Calculate interrupt storm rate
-		// TODO: EOF & Loop handling??
-		rlen = 0;
-		while (rlen != count) {
-			wlen = ivsm->stc_write_head;
-			if (wlen > count)
-				wlen = count;
-			memcpy(buf + wlen - rlen, (void*)ivsm + sizeof(IVSM) + wlen - rlen, wlen);
+
+	len = 0;
+	rlen = ivsm->stc_read_head;
+	while (rlen != count) {
+		wlen = ivsm->stc_write_head;
+		if (wlen - rlen > count)
+			wlen = count + rlen;
+		printf("OFF: wlen %lu: rlen %lu: count %lu\n", wlen, rlen, count);
+		if (wlen - rlen) {
+			memcpy(buf + rlen - len, (void*)ivsm + sizeof(IVSM) + wlen - rlen, wlen - rlen);
 			rlen = wlen;
-			ivsm->stc_read_head = rlen;
-			intr_wait();
+	 		ivsm->stc_read_head = rlen;
 		}
-	} else {
-		printf("POLL MODE\n");
-		rlen = 0;
-		while (rlen != count) {
-			wlen = ivsm->stc_write_head;
-			if (wlen > count)
-				wlen = count;
-			memcpy(buf + wlen - rlen, (void*)ivsm + sizeof(IVSM) + wlen - rlen, wlen);
-			rlen = wlen;
-			ivsm->stc_read_head = rlen;
-			if (rlen != count)
+		printf("NEW RLEN: %lu\n", rlen);
+		if (rlen != count) {
+			printf("RLEN != COUNT\n\n");
+			if (ivsm->poll_mode) {
+				printf("POLL MODE %lu\n", rlen);
 				usleep(POLL_US);
-		}
+			} else {
+				printf("INTR MODE %lu\n", rlen);
+				intr_wait();
+			}
+		} else
+			printf("RLEN == COUNT\n\n");
 	}
 
 	return count;
