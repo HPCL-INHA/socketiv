@@ -24,14 +24,16 @@ ssize_t socketiv_read(int fd, void *buf, size_t count)
 	IVSOCK *ivsock = fd_to_ivsock_map[fd];
 	IVSM *ivsm = ivsock->ivsm_addr;
 
-	intr_wait();
-	ivsm->reader_ack = 1;
-	do {
-		intr_send(1);
-	} while (!ivsm->sender_ack);
-	ivsm->sender_ack = 0;
+	static const struct timespec a = { 0, 1 };
 
+	puts("START");
+
+	while (!ivsm->sender_ack) putchar('\0');//nanosleep(&a, NULL);// usleep(1);
+	ivsm->sender_ack = 0;
 	memcpy(buf, (void*)ivsm + sizeof(IVSM), count);
+	ivsm->reader_ack = 1;
+
+	puts("END");
 
 	return count;
 }
