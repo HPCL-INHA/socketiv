@@ -23,45 +23,17 @@ ssize_t socketiv_read(int fd, void *buf, size_t count)
 {
 	IVSOCK *ivsock = fd_to_ivsock_map[fd];
 	IVSM *ivsm = ivsock->ivsm_addr;
-	size_t rlen, wlen, len;
 
-	printf("%p\n", ivsm);
+	intr_wait();
+	ivsm->reader_ack = 1;
+	do {
+		intr_send(1);
+	} while (!ivsm->sender_ack);
+	ivsm->sender_ack = 0;
 
-	// 인터럽트 모드 일 때: 인터럽트가 올 때 까지 wait -> 인터럽트가 발생하면 available 한 블록들 모두 read copy
-
-	len = 0;
-	rlen = ivsm->stc_read_head;
-	while (rlen != count) {
-		wlen = ivsm->stc_write_head;
-		if (wlen - rlen > count)
-			wlen = count + rlen;
-		printf("OFF: wlen %lu: rlen %lu: count %lu\n", wlen, rlen, count);
-		if (wlen - rlen) {
-			memcpy(buf + rlen - len, (void*)ivsm + sizeof(IVSM) + wlen - rlen, wlen - rlen);
-			rlen = wlen;
-	 		ivsm->stc_read_head = rlen;
-		}
-		printf("NEW RLEN: %lu\n", rlen);
-		if (rlen != count) {
-			printf("RLEN != COUNT\n\n");
-			if (ivsm->poll_mode) {
-				printf("POLL MODE %lu\n", rlen);
-				usleep(POLL_US);
-			} else {
-				printf("INTR MODE %lu\n", rlen);
-				intr_wait();
-			}
-		} else
-			printf("RLEN == COUNT\n\n");
-	}
+	memcpy(buf, (void*)ivsm + sizeof(IVSM), count);
 
 	return count;
-
-	// 스루풋이 더욱 증가하여 threshold 를 초과할 시: IVSOCK 내의 기술된 폴링 모드(= 폴링 interval)를 다음 단계로 증가하여 interval 단축
-	// 스루풋이 하향: 이전 interval로 단축
-	// 일정 time window(burst timeout mode) 동안 전송이 발생하지 않음: 다시 인터럽트 모드로 전환
-	// 큰 쓰기가 발생한 경우: 더욱 큰 block size로 전환 - 이후 충분히 큰 쓰기가 이뤄지지 않으면 block size 축소
-	// TODO: ^ ???
 }
 
 static inline int64_t getmstime(void)
@@ -93,11 +65,9 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count)
 		if (ivsock->timestamp[(ivsock->timestamp_index + 1) % TIMESTAMP_ENTRIES] - time < STORM_RATE_MS) {
 			if (!ivsm->poll_mode) {
 				ivsm->poll_mode = true;
-				intr_send();
 			}
 		} else {
 			ivsm->poll_mode = false;
-			intr_send();
 		}
 	}
 
@@ -107,8 +77,6 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count)
 		memcpy((void*)ivsm + sizeof(IVSM) + len, buf + len, count - len);
 		ivsm->stc_write_head = count;
 
-		if (!ivsm->poll_mode)
-			intr_send();
 	}
 
 	return count;

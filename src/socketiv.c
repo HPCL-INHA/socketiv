@@ -17,6 +17,8 @@
 #include "intr.c"
 
 typedef struct ivsm {
+	int sender_ack;
+	int reader_ack;
 	bool poll_mode;
 	void *cts_queue;
 	size_t cts_queue_size;

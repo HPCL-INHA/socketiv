@@ -25,9 +25,8 @@ static int doorbell_fd;
 static void *doorbell_mmap;
 static void *plain_mmap;
 
-void intr_send()
+void intr_send(const unsigned short dest)
 {
-	const unsigned short dest = 1;
 	const unsigned short cmd = 0;
 	int msg = ((dest & 0xffff) << 16) + (cmd & 0xffff);
 
@@ -54,7 +53,7 @@ void *intr_quirk_func(void *data)
 {
 	for (;;) {
 		usleep(100 * 1000);
-		intr_send();
+//		intr_send();
 	}
 }
 
@@ -98,5 +97,5 @@ void intr_init()
 	close(fd);
 
 	// Setup interrupt quirk thread to send occasional interrupts
-	pthread_create(&intr_quirk, NULL, intr_quirk_func, NULL);
+//	pthread_create(&intr_quirk, NULL, intr_quirk_func, NULL);
 }
