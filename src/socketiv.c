@@ -16,8 +16,8 @@
 
 #include "intr.c"
 
-typedef volatile struct ivsm {
-	int writer_ack;
+typedef struct ivsm {
+	int sender_ack;
 	int reader_ack;
 	bool poll_mode;
 	void *cts_queue;
@@ -33,7 +33,7 @@ typedef volatile struct ivsm {
 #define TIMESTAMP_ENTRIES 20
 #define STORM_RATE_MS 50
 #define POLL_US 500
-typedef volatile struct ivsock {
+typedef struct ivsock {
 	int enabled;
 
 	// QoS 에 필요한 변수들
