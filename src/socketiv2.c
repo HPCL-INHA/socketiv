@@ -78,15 +78,24 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count)
 {
 	IVSOCK *ivsock = fd_to_ivsock_map[fd];
 	IVSM *ivsm = ivsock->ivsm_addr;
+	int temp;
+
+	assert(ivsm->reader_ack == 0);
 
 	memcpy((void*)ivsm + sizeof(IVSM), buf, count);
-
 	do {
 		intr_send(0);
+		usleep(1);
 	} while (!ivsm->reader_ack);
-	ivsm->reader_ack = 0;
+	do { temp = ivsm->reader_ack; }
+	while(__sync_val_compare_and_swap((int *)&ivsm -> reader_ack, ivsm->reader_ack, 0)
+		!= temp);
 	intr_wait();
-	ivsm->sender_ack = 1;
+	do { temp = ivsm->writer_ack; }
+	while(__sync_val_compare_and_swap((int *)&ivsm -> writer_ack, ivsm->writer_ack, 1)
+		!= temp);
+
+	printf("FUCK\n");
 
 	return count;
 }
