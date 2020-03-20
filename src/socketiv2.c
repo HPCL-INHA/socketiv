@@ -74,6 +74,8 @@ static inline int64_t getmstime(void)
 	return (tp.tv_sec * 1000) + (tp.tv_nsec / 1000 / 1000);
 }
 
+#define barrier() __asm__ __volatile__("": : :"memory")
+
 ssize_t socketiv_write(int fd, const void *buf, size_t count)
 {
 	IVSOCK *ivsock = fd_to_ivsock_map[fd];
@@ -83,19 +85,14 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count)
 	assert(ivsm->reader_ack == 0);
 
 	memcpy((void*)ivsm + sizeof(IVSM), buf, count);
+	ivsm->writer_end = 1;
 	do {
 		intr_send(0);
-		usleep(1);
 	} while (!ivsm->reader_ack);
-	do { temp = ivsm->reader_ack; }
-	while(__sync_val_compare_and_swap((int *)&ivsm -> reader_ack, ivsm->reader_ack, 0)
-		!= temp);
 	intr_wait();
-	do { temp = ivsm->writer_ack; }
-	while(__sync_val_compare_and_swap((int *)&ivsm -> writer_ack, ivsm->writer_ack, 1)
-		!= temp);
-
-	printf("FUCK\n");
+	ivsm->writer_end = 0;
+	ivsm->writer_ack = 1;
+	ivsm->reader_ack = 0;
 
 	return count;
 }
