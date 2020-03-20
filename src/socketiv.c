@@ -17,9 +17,10 @@
 #include "intr.c"
 
 typedef volatile struct ivsm {
-	int64_t sender_ack;
-	int64_t reader_ack;
-	int64_t poll_mode;
+	int writer_end;
+	int writer_ack;
+	int reader_ack;
+	bool poll_mode;
 	void *cts_queue;
 	size_t cts_queue_size;
 	size_t cts_read_head;
@@ -28,7 +29,6 @@ typedef volatile struct ivsm {
 	size_t stc_queue_size;
 	size_t stc_read_head;
 	size_t stc_write_head;
-	char padding[168];
 } IVSM;
 
 #define TIMESTAMP_ENTRIES 20
