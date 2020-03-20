@@ -17,6 +17,7 @@
 #include "intr.c"
 
 typedef volatile struct ivsm {
+	int writer_end;
 	int writer_ack;
 	int reader_ack;
 	bool poll_mode;
