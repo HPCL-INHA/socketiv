@@ -19,28 +19,24 @@ static inline int socketiv_remove_ivshmem(int sockfd)
 }
 #endif
 
-#define barrier() __asm__ __volatile__("": : :"memory")
-
 ssize_t socketiv_read(int fd, void *buf, size_t count)
 {
 	IVSOCK *ivsock = fd_to_ivsock_map[fd];
 	IVSM *ivsm = ivsock->ivsm_addr;
-	int temp;
 
-	if (!ivsm->writer_end) {
-		intr_wait();
-	}
-	ivsm->reader_ack = 1;
+	static const struct timespec a = { 0, 1 };
+
+	puts("START");
+
+	while (!ivsm->sender_ack) putchar('\0');//nanosleep(&a, NULL);// usleep(1);
+	ivsm->sender_ack = 0;
 	memcpy(buf, (void*)ivsm + sizeof(IVSM), count);
-	do {
-		intr_send(1);
-	} while (!ivsm->writer_ack);
-	ivsm->writer_ack = 0;
+	ivsm->reader_ack = 1;
+
+	puts("END");
 
 	return count;
 }
-
-
 
 static inline int64_t getmstime(void)
 {
