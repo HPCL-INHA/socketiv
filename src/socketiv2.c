@@ -25,21 +25,31 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 
 	do {
 		intr_wait();
-		if ( __sync_val_compare_and_swap( (bool *)(&(ivsm->writer_end)), true, false) == true ) // 아토믹이 필요할까?
-			break;
+		if ( __sync_val_compare_and_swap( (bool *)(&(ivsm->writer_end)), true, false) == true ) {
+				barrier();
+				break;
+			}
 	} while (true);
-	ivsm->reader_ack = 1;
+	if (__sync_val_compare_and_swap( (bool *)(&(ivsm->reader_ack)), false, true) != false) {
+		abort();
+	}
+	barrier();
 
-	assert(ivsm->reader_end == 0); // assert
+	assert(ivsm->reader_end == 0);
 	memcpy(buf, (void*)ivsm + sizeof(IVSM), count);
-	ivsm->reader_end = 1; // 주목
-	barrier(); // 필요한가?
+	if (__sync_val_compare_and_swap( (bool *)(&(ivsm->reader_end)), false, true) != false) {
+		abort();
+	}
+	barrier();
 
 	do {
 		intr_send(1);
 		usleep(1); // interrupt retry - 얼마정도 쉬어야 할까 or clock_nanosleep()
 	} while (!ivsm->writer_ack);
-	ivsm->writer_ack = 0;
+	if (__sync_val_compare_and_swap( (bool *)(&(ivsm->writer_ack)), true, false) != true) {
+		abort();
+	}
+	barrier();
 
 	return count;
 }
@@ -55,23 +65,35 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 	IVSOCK *ivsock = fd_to_ivsock_map[fd];
 	IVSM *ivsm = ivsock->ivsm_addr;
 
-	assert(ivsm->writer_end == 0); // assert
+	assert(ivsm->writer_end == 0);
 	memcpy((void*)ivsm + sizeof(IVSM), buf, count);
-	ivsm->writer_end = 1; // 주목
-	barrier(); // 필요한가?
+	barrier();
+	if (__sync_val_compare_and_swap( (bool *)(&(ivsm->writer_end)), false, true) != false) {
+		abort();
+	}
+	barrier();
 
 	do {
 		intr_send(0);
 		usleep(1); // interrupt retry - 얼마정도 쉬어야 할까 or clock_nanosleep()
 	} while (!ivsm->reader_ack);
-	ivsm->reader_ack = 0;
+	if (__sync_val_compare_and_swap( (bool *)(&(ivsm->reader_ack)), true, false) != true) {
+		abort();
+	}
+	barrier();
 
 	do {
 		intr_wait();
-		if ( __sync_val_compare_and_swap( (bool *)(&(ivsm->reader_end)), true, false) == true ) // 아토믹이 필요할까?
+		if ( __sync_val_compare_and_swap( (bool *)(&(ivsm->reader_end)), true, false) == true ) {
+			barrier();
 			break;
+		}
 	} while (true);
-	ivsm->writer_ack = 1;
+	if (__sync_val_compare_and_swap( (bool *)(&(ivsm->writer_ack)), false, true) != false) {
+		abort();
+	}
+	barrier();
+	
 
 	return count;
 }

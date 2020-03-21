@@ -19,8 +19,8 @@
 typedef volatile struct ivsm {
 	bool writer_end;
 	bool reader_end;
-	int writer_ack;
-	int reader_ack;
+	bool writer_ack;
+	bool reader_ack;
 	bool poll_mode;
 	void *cts_queue;
 	size_t cts_queue_size;
