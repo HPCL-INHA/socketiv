@@ -30,32 +30,25 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 
 	do {
 		intr_wait();
+		printf("interrupt hit!\n");
 		if ( __sync_val_compare_and_swap( (bool *)(&(ivsm->writer_end)), true, false) == true ) {
-				barrier();
-				break;
-			}
+			printf("interrupt corret!\n");
+			break;
+		}
 	} while (true);
-	if (__sync_val_compare_and_swap( (bool *)(&(ivsm->reader_ack)), false, true) != false) {
-		abort();
-	}
-	barrier();
+	ivsm->reader_ack = 1;
 
 	assert(ivsm->reader_end == 0);
 	printf("start memcpy()\n");
 	memcpy(buf, (void*)ivsm + sizeof(IVSM), count);
-	if (__sync_val_compare_and_swap( (bool *)(&(ivsm->reader_end)), false, true) != false) {
-		abort();
-	}
-	barrier();
+	ivsm->reader_end = 1;
 
+	// temporal solution - intr_send() 가 성공할지 안할지 몰라서...
 	do {
 		intr_send(1);
 		usleep(1); // interrupt retry - 얼마정도 쉬어야 할까 or clock_nanosleep()
 	} while (!ivsm->writer_ack);
-	if (__sync_val_compare_and_swap( (bool *)(&(ivsm->writer_ack)), true, false) != true) {
-		abort();
-	}
-	barrier();
+	ivsm->writer_ack = 0;
 
 	printf("end of read()\n");
 
@@ -73,40 +66,32 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 	IVSOCK *ivsock = fd_to_ivsock_map[fd];
 	IVSM *ivsm = ivsock->ivsm_addr;
 	
-	printf("reader_ack: %d", ivsm->reader_ack);
-	printf("writer_ack: %d", ivsm->writer_ack);
-	printf("reader_end: %d", ivsm->reader_end);
-	printf("writer_end: %d", ivsm->writer_end);
+	printf("reader_ack: %d\n", ivsm->reader_ack);
+	printf("writer_ack: %d\n", ivsm->writer_ack);
+	printf("reader_end: %d\n", ivsm->reader_end);
+	printf("writer_end: %d\n", ivsm->writer_end);
 
 	assert(ivsm->writer_end == 0);
 	printf("start memcpy()\n");
 	memcpy((void*)ivsm + sizeof(IVSM), buf, count);
-	barrier();
-	if (__sync_val_compare_and_swap( (bool *)(&(ivsm->writer_end)), false, true) != false) {
-		abort();
-	}
-	barrier();
+	ivsm->writer_end = 1;
 
+	// temporal solution - intr_send() 가 성공할지 안할지 몰라서...
 	do {
 		intr_send(0);
-		usleep(1); // interrupt retry - 얼마정도 쉬어야 할까 or clock_nanosleep()
+		usleep(1); // interrupt retry - 얼마정도 쉬어야 할까 or clock_nanosleep()?
 	} while (!ivsm->reader_ack);
-	if (__sync_val_compare_and_swap( (bool *)(&(ivsm->reader_ack)), true, false) != true) {
-		abort();
-	}
-	barrier();
+	ivsm->reader_ack = 0;
 
 	do {
 		intr_wait();
-		if ( __sync_val_compare_and_swap( (bool *)(&(ivsm->reader_end)), true, false) == true ) {
-			barrier();
+		printf("interrupt hit!\n");
+		if ( __sync_val_compare_and_swap( (bool *)(&(ivsm->reader_end)), true, false) == true ) { // 필요한가?
+			printf("interrupt corret!\n");
 			break;
 		}
 	} while (true);
-	if (__sync_val_compare_and_swap( (bool *)(&(ivsm->writer_ack)), false, true) != false) {
-		abort();
-	}
-	barrier();
+	ivsm->writer_ack = 1;
 	
 	printf("end of write()\n");
 
