@@ -38,7 +38,7 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 	// temporal solution - intr_send() 가 성공할지 안할지 몰라서...
 	do {
 		intr_send(1);
-		usleep(1); // interrupt retry - 얼마정도 쉬어야 할까 or clock_nanosleep()
+		usleep(1); // interrupt retry - 얼마정도 쉬어야 할까 or clock_nanosleep()?
 	} while (!ivsm->writer_ack);
 	ivsm->writer_ack = 0;
 
