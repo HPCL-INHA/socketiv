@@ -23,12 +23,12 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 	IVSOCK *ivsock = fd_to_ivsock_map[fd];
 	IVSM *ivsm = ivsock->ivsm_addr;
 
-	while(true) {
+	do {
 		intr_wait();
 		if ( __sync_val_compare_and_swap( (int *)&ivsm->writer_end, true, false) == true ) { // 아토믹이 필요할까?
 			break;
 		}
-	}
+	} while (true);
 	ivsm->reader_ack = 1;
 
 	assert(ivsm->reader_end == 0); // assert
@@ -65,12 +65,12 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 	} while (!ivsm->reader_ack);
 	ivsm->reader_ack = 0;
 
-	while(true) {
+	do {
 		intr_wait();
 		if ( __sync_val_compare_and_swap( (int *)&ivsm->reader_end, true, false) == true ) { // 아토믹이 필요할까?
 			break;
 		}
-	}
+	} while (true);
 	ivsm->writer_ack = 1;
 
 	return count;
