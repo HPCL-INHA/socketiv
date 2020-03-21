@@ -25,7 +25,7 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 
 	do {
 		intr_wait();
-		if ( __sync_val_compare_and_swap( (int *)&ivsm->writer_end, true, false) == true ) // 아토믹이 필요할까?
+		if ( __sync_val_compare_and_swap( (bool *)(&(ivsm->writer_end)), true, false) == true ) // 아토믹이 필요할까?
 			break;
 	} while (true);
 	ivsm->reader_ack = 1;
@@ -33,6 +33,7 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 	assert(ivsm->reader_end == 0); // assert
 	memcpy(buf, (void*)ivsm + sizeof(IVSM), count);
 	ivsm->reader_end = 1; // 주목
+	barrier(); // 필요한가?
 
 	do {
 		intr_send(1);
@@ -57,6 +58,7 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 	assert(ivsm->writer_end == 0); // assert
 	memcpy((void*)ivsm + sizeof(IVSM), buf, count);
 	ivsm->writer_end = 1; // 주목
+	barrier(); // 필요한가?
 
 	do {
 		intr_send(0);
@@ -66,7 +68,7 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 
 	do {
 		intr_wait();
-		if ( __sync_val_compare_and_swap( (int *)&ivsm->reader_end, true, false) == true ) // 아토믹이 필요할까?
+		if ( __sync_val_compare_and_swap( (bool *)(&(ivsm->reader_end)), true, false) == true ) // 아토믹이 필요할까?
 			break;
 	} while (true);
 	ivsm->writer_ack = 1;
