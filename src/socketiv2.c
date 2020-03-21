@@ -31,10 +31,17 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 	do {
 		intr_wait();
 		printf("interrupt hit!\n");
+		if (ivsm->writer_end) {
+			ivsm->writer_end = 0;
+			printf("interrupt corret!\n");
+			break;
+		}
+		/*
 		if ( __sync_val_compare_and_swap( (bool *)(&(ivsm->writer_end)), true, false) == true ) {
 			printf("interrupt corret!\n");
 			break;
 		}
+		*/
 	} while (true);
 	ivsm->reader_ack = 1;
 
@@ -86,10 +93,17 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 	do {
 		intr_wait();
 		printf("interrupt hit!\n");
+		if (ivsm->reader_end) {
+			ivsm->reader_end = 0;
+			printf("interrupt corret!\n");
+			break;
+		}
+		/*
 		if ( __sync_val_compare_and_swap( (bool *)(&(ivsm->reader_end)), true, false) == true ) { // 필요한가?
 			printf("interrupt corret!\n");
 			break;
 		}
+		*/
 	} while (true);
 	ivsm->writer_ack = 1;
 	
