@@ -23,30 +23,15 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 	IVSOCK *ivsock = fd_to_ivsock_map[fd];
 	IVSM *ivsm = ivsock->ivsm_addr;
 
-	printf("reader_ack: %d\n", ivsm->reader_ack);
-	printf("writer_ack: %d\n", ivsm->writer_ack);
-	printf("reader_end: %d\n", ivsm->reader_end);
-	printf("writer_end: %d\n", ivsm->writer_end);
-
 	do {
 		intr_wait();
-		printf("interrupt hit!\n");
 		if (ivsm->writer_end) {
 			ivsm->writer_end = 0;
-			printf("interrupt corret!\n");
 			break;
 		}
-		/*
-		if ( __sync_val_compare_and_swap( (bool *)(&(ivsm->writer_end)), true, false) == true ) {
-			printf("interrupt corret!\n");
-			break;
-		}
-		*/
 	} while (true);
 	ivsm->reader_ack = 1;
-
-	assert(ivsm->reader_end == 0);
-	printf("start memcpy()\n");
+	
 	memcpy(buf, (void*)ivsm + sizeof(IVSM), count);
 	ivsm->reader_end = 1;
 
@@ -56,8 +41,6 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 		usleep(1); // interrupt retry - 얼마정도 쉬어야 할까 or clock_nanosleep()
 	} while (!ivsm->writer_ack);
 	ivsm->writer_ack = 0;
-
-	printf("end of read()\n");
 
 	return count;
 }
@@ -72,14 +55,7 @@ static inline int64_t getmstime(void) {
 ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 	IVSOCK *ivsock = fd_to_ivsock_map[fd];
 	IVSM *ivsm = ivsock->ivsm_addr;
-	
-	printf("reader_ack: %d\n", ivsm->reader_ack);
-	printf("writer_ack: %d\n", ivsm->writer_ack);
-	printf("reader_end: %d\n", ivsm->reader_end);
-	printf("writer_end: %d\n", ivsm->writer_end);
 
-	assert(ivsm->writer_end == 0);
-	printf("start memcpy()\n");
 	memcpy((void*)ivsm + sizeof(IVSM), buf, count);
 	ivsm->writer_end = 1;
 
@@ -92,22 +68,12 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 
 	do {
 		intr_wait();
-		printf("interrupt hit!\n");
 		if (ivsm->reader_end) {
 			ivsm->reader_end = 0;
-			printf("interrupt corret!\n");
 			break;
 		}
-		/*
-		if ( __sync_val_compare_and_swap( (bool *)(&(ivsm->reader_end)), true, false) == true ) { // 필요한가?
-			printf("interrupt corret!\n");
-			break;
-		}
-		*/
 	} while (true);
 	ivsm->writer_ack = 1;
-	
-	printf("end of write()\n");
 
 	return count;
 }
