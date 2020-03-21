@@ -31,14 +31,14 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 		}
 	} while (true);
 	ivsm->reader_ack = 1;
-
+	
 	memcpy(buf, (void*)ivsm + sizeof(IVSM), count);
 	ivsm->reader_end = 1;
 
 	// temporal solution - intr_send() 가 성공할지 안할지 몰라서...
 	do {
 		intr_send(1);
-		// usleep(1); // interrupt retry - 얼마정도 쉬어야 할까 or clock_nanosleep()
+		usleep(1); // interrupt retry - 얼마정도 쉬어야 할까 or clock_nanosleep()
 	} while (!ivsm->writer_ack);
 	ivsm->writer_ack = 0;
 
@@ -62,7 +62,7 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 	// temporal solution - intr_send() 가 성공할지 안할지 몰라서...
 	do {
 		intr_send(0);
-		// usleep(1); // interrupt retry - 얼마정도 쉬어야 할까 or clock_nanosleep()?
+		usleep(1); // interrupt retry - 얼마정도 쉬어야 할까 or clock_nanosleep()?
 	} while (!ivsm->reader_ack);
 	ivsm->reader_ack = 0;
 
