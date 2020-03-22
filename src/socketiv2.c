@@ -18,6 +18,7 @@ static inline int socketiv_remove_ivshmem(int sockfd) {
 #endif
 
 #define barrier() __asm__ __volatile__("": : :"memory")
+#define OFFSET (1024 * 1024)
 
 ssize_t socketiv_read(int fd, void *buf, size_t count) {
 	IVSOCK *ivsock = fd_to_ivsock_map[fd];
@@ -32,7 +33,7 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 	} while (true);
 	ivsm->reader_ack = 1;
 	
-	memcpy(buf, (void*)ivsm + sizeof(IVSM), count);
+	memcpy(buf, (void*)ivsm + OFFSET, count);
 	ivsm->reader_end = 1;
 
 	// temporal solution - intr_send() 가 성공할지 안할지 몰라서...
@@ -56,7 +57,7 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 	IVSOCK *ivsock = fd_to_ivsock_map[fd];
 	IVSM *ivsm = ivsock->ivsm_addr;
 
-	memcpy((void*)ivsm + sizeof(IVSM), buf, count);
+	memcpy((void*)ivsm + OFFSET, buf, count);
 	ivsm->writer_end = 1;
 
 	// temporal solution - intr_send() 가 성공할지 안할지 몰라서...

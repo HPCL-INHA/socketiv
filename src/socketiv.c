@@ -16,7 +16,9 @@
 
 #include "intr.c"
 
-typedef volatile struct ivsm {
+#define ALIGN 64
+
+struct ivsm {
 	bool writer_end;
 	bool reader_end;
 	bool writer_ack;
@@ -30,12 +32,14 @@ typedef volatile struct ivsm {
 	size_t stc_queue_size;
 	size_t stc_read_head;
 	size_t stc_write_head;
-} IVSM __attribute__((aligned(256), packed));
+} __attribute__((aligned(ALIGN), packed));
+
+typedef struct ivsm IVSM;
 
 #define TIMESTAMP_ENTRIES 20
 #define STORM_RATE_MS 50
 #define POLL_US 500
-typedef volatile struct ivsock {
+struct ivsock {
 	int enabled;
 
 	// QoS 에 필요한 변수들
@@ -52,7 +56,9 @@ typedef volatile struct ivsock {
 	void *send_int_uio; // address for sending interrupt
 
 	IVSM *ivsm_addr;
-} IVSOCK __attribute__((aligned(256), packed));
+} __attribute__((aligned(ALIGN), packed));
+
+typedef struct ivsock IVSOCK;
 
 IVSOCK **fd_to_ivsock_map;
 size_t fd_to_ivsock_map_reserve;
