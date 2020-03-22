@@ -18,6 +18,7 @@ static inline int socketiv_remove_ivshmem(int sockfd) {
 #endif
 
 #define barrier() __asm__ __volatile__("": : :"memory")
+#define OFFSET (1024 * 1024)
 
 ssize_t socketiv_read(int fd, void *buf, size_t count) {
 	IVSOCK *ivsock = fd_to_ivsock_map[fd];
@@ -28,7 +29,7 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 		usleep(1); // 시간 얼마? or clock_nanosleep()?
 	};
 	
-	memcpy(buf, (void*)ivsm + sizeof(IVSM), count);
+	memcpy(buf, (void*)ivsm + OFFSET, count);
 	ivsm->data_ready = 0;
 
 	return count;
@@ -50,7 +51,7 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 		usleep(1); // 시간 얼마? or clock_nanosleep()?
 	}
 
-	memcpy((void*)ivsm + sizeof(IVSM), buf, count);
+	memcpy((void*)ivsm + OFFSET, buf, count);
 	ivsm->data_ready = 1;
 
 	return count;
