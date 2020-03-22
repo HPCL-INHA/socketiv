@@ -23,24 +23,13 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 	IVSOCK *ivsock = fd_to_ivsock_map[fd];
 	IVSM *ivsm = ivsock->ivsm_addr;
 
-	do {
-		intr_wait();
-		if (ivsm->writer_end) {
-			ivsm->writer_end = 0;
-			break;
-		}
-	} while (true);
-	ivsm->reader_ack = 1;
+	// poll
+	while (!(ivsm->data_ready)) {
+		usleep(1); // 시간 얼마? or clock_nanosleep()?
+	};
 	
 	memcpy(buf, (void*)ivsm + sizeof(IVSM), count);
-	ivsm->reader_end = 1;
-
-	// temporal solution - intr_send() 가 성공할지 안할지 몰라서...
-	do {
-		intr_send(1);
-		usleep(1); // interrupt retry - 얼마정도 쉬어야 할까 or clock_nanosleep()?
-	} while (!ivsm->writer_ack);
-	ivsm->writer_ack = 0;
+	ivsm->data_ready = 0;
 
 	return count;
 }
@@ -56,24 +45,13 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 	IVSOCK *ivsock = fd_to_ivsock_map[fd];
 	IVSM *ivsm = ivsock->ivsm_addr;
 
+	// poll
+	while (ivsm->data_ready) {
+		usleep(1); // 시간 얼마? or clock_nanosleep()?
+	}
+
 	memcpy((void*)ivsm + sizeof(IVSM), buf, count);
-	ivsm->writer_end = 1;
-
-	// temporal solution - intr_send() 가 성공할지 안할지 몰라서...
-	do {
-		intr_send(0);
-		usleep(1); // interrupt retry - 얼마정도 쉬어야 할까 or clock_nanosleep()?
-	} while (!ivsm->reader_ack);
-	ivsm->reader_ack = 0;
-
-	do {
-		intr_wait();
-		if (ivsm->reader_end) {
-			ivsm->reader_end = 0;
-			break;
-		}
-	} while (true);
-	ivsm->writer_ack = 1;
+	ivsm->data_ready = 1;
 
 	return count;
 }
