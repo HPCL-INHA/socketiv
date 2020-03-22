@@ -30,7 +30,7 @@ typedef volatile struct ivsm {
 	size_t stc_queue_size;
 	size_t stc_read_head;
 	size_t stc_write_head;
-} IVSM;
+} IVSM __attribute__((aligned(256), packed));
 
 #define TIMESTAMP_ENTRIES 20
 #define STORM_RATE_MS 50
@@ -52,7 +52,7 @@ typedef volatile struct ivsock {
 	void *send_int_uio; // address for sending interrupt
 
 	IVSM *ivsm_addr;
-} IVSOCK;
+} IVSOCK __attribute__((aligned(256), packed));
 
 IVSOCK **fd_to_ivsock_map;
 size_t fd_to_ivsock_map_reserve;
