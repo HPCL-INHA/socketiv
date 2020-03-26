@@ -25,12 +25,12 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 	IVSM *ivsm = ivsock->ivsm_addr;
 
 	// poll
-	while (!(ivsm->data_ready)) {
-		usleep(1); // 시간 얼마? or clock_nanosleep()?
+	while (ivsm->wptr - ivsm->rptr < count) {
+		usleep(SLEEP); // 시간 얼마? or clock_nanosleep()?
 	};
 	
-	memcpy(buf, (void*)ivsm + OFFSET, count);
-	ivsm->data_ready = 0;
+	memcpy(buf, (void*)ivsm + OFFSET + ivsm->rptr, count);
+	ivsm->rptr += count;
 
 	return count;
 }
@@ -46,13 +46,8 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 	IVSOCK *ivsock = fd_to_ivsock_map[fd];
 	IVSM *ivsm = ivsock->ivsm_addr;
 
-	// poll
-	while (ivsm->data_ready) {
-		usleep(1); // 시간 얼마? or clock_nanosleep()?
-	}
-
-	memcpy((void*)ivsm + OFFSET, buf, count);
-	ivsm->data_ready = 1;
+	memcpy((void*)ivsm + OFFSET + ivsm->wptr, buf, count);
+	ivsm->wptr += count;
 
 	return count;
 }

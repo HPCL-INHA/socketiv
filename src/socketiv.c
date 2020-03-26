@@ -19,15 +19,8 @@
 #define ALIGN 64
 
 struct ivsm {
-	bool data_ready;
-	void *cts_queue;
-	size_t cts_queue_size;
-	size_t cts_read_head;
-	size_t cts_write_head;
-	void *stc_queue;
-	size_t stc_queue_size;
-	size_t stc_read_head;
-	size_t stc_write_head;
+	size_t rptr;
+	size_t wptr;
 } __attribute__((aligned(ALIGN), packed));
 
 typedef struct ivsm IVSM;
