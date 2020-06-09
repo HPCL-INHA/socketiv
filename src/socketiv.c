@@ -73,6 +73,10 @@ static void __attribute__((constructor)) socketiv_init() { // initialize SocketI
 	orig_connect = (int (*)(int, const struct sockaddr *, socklen_t))dlsym(RTLD_NEXT, "connect");
 	orig_read = (ssize_t (*)(int, void *, size_t))dlsym(RTLD_NEXT, "read");
 	orig_write = (ssize_t (*)(int, const void *, size_t))dlsym(RTLD_NEXT, "write");
+	orig_recv = (ssize_t (*)(int, void *, size_t, int))dlsym(RTLD_NEXT, "recv");
+	orig_recvfrom = (ssize_t (*)(int, void *, size_t, int, const struct sockaddr *, socklen_t))dlsym(RTLD_NEXT, "recvfrom");
+	orig_send = (ssize_t (*)(int, const void *, size_t, int))dlsym(RTLD_NEXT, "send");
+	orig_sendto = (ssize_t (*)(int, const void *, size_t, int, const struct sockaddr *, socklen_t))dlsym(RTLD_NEXT, "sendto");
 	orig_close = (int (*)(int))dlsym(RTLD_NEXT, "close");
 }
 

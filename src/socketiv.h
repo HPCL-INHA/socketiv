@@ -20,6 +20,12 @@ int (*orig_connect) (int, const struct sockaddr *, socklen_t);
 ssize_t(*orig_read) (int, void *, size_t);
 ssize_t(*orig_write) (int, const void *, size_t);
 
+ssize_t (*orig_recv)(int, void *, size_t, int);
+ssize_t (*orig_recvfrom)(int, void *, size_t, int, const struct sockaddr *, socklen_t);
+
+ssize_t (*orig_send)(int, const void *, size_t, int);
+ssize_t (*orig_sendto)(int, const void *, size_t, int, const struct sockaddr *, socklen_t);
+
 int (*orig_close) (int);
 
 bool socketiv_check_vm_subnet(const struct sockaddr *addr);
