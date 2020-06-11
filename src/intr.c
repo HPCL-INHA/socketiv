@@ -63,6 +63,7 @@ void intr_init()
 	uint64_t pagesize, addr, len;
 	int fd;
 
+#if 0
 	// Setup doorbell fd for receiving interrupts
 	doorbell_fd = open(doorbell_path, O_RDWR);
 	if (doorbell_fd == -1) {
@@ -77,6 +78,7 @@ void intr_init()
 		perror("Failed to mmap doorbell device path");
 		exit(1);
 	}
+#endif
 
 	// Setup plain mmap for looking up read()/write() sizes
 	fd = open("/dev/mem", O_RDWR);

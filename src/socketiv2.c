@@ -32,6 +32,8 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 	memcpy(buf, (void*)ivsm + OFFSET + ivsm->rptr, count);
 	ivsm->rptr += count;
 
+	printf("IVSH: READ\n");
+
 	return count;
 }
 
@@ -48,6 +50,8 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 
 	memcpy((void*)ivsm + OFFSET + ivsm->wptr, buf, count);
 	ivsm->wptr += count;
+
+	printf("IVSH: WRITE\n");
 
 	return count;
 }

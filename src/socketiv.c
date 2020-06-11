@@ -128,6 +128,7 @@ bool socketiv_check_vm_subnet(const struct sockaddr *addr) { // (장기적 수�
 	struct sockaddr_in *addr_in = (struct sockaddr_in *)addr;
 	char *addr_str = inet_ntoa(addr_in->sin_addr);
 
+	printf("DEBUG: addr_str: %s\n", addr_str);
 	bool ret = !strncmp(addr_str, VIRT_NET_ADDR_SPACE, strlen(VIRT_NET_ADDR_SPACE));
 	if (ret) puts("YES"); else puts("NO"); return ret;
 }
