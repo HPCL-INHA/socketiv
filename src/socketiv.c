@@ -21,6 +21,7 @@
 struct ivsm {
 	size_t rptr;
 	size_t wptr;
+	int fulled;
 } __attribute__((aligned(ALIGN), packed));
 
 typedef struct ivsm IVSM;
@@ -44,7 +45,8 @@ struct ivsock {
 	int recv_int_uio;   // file descriptor for receiving interrupt
 	void *send_int_uio; // address for sending interrupt
 
-	IVSM *ivsm_addr;
+	IVSM *ivsm_addr_read;
+	IVSM *ivsm_addr_write;
 } __attribute__((aligned(ALIGN), packed));
 
 typedef struct ivsock IVSOCK;
@@ -96,9 +98,11 @@ static inline int attach_new_ivsock_to_fd(int fd) {
 	intr_init();
 
 	ivsock->blk_size = 256 * 1024;
-	ivsock->ivsm_addr = plain_mmap; //(void*)PHYS_ADDR;
+	ivsock->ivsm_addr_read = plain_mmap_read; //(void*)PHYS_ADDR;
+	ivsock->ivsm_addr_write = plain_mmap_write; //(void*)PHYS_ADDR;
 #ifdef CLIENT
-	memset(plain_mmap, 0, sizeof(IVSOCK));
+	memset(plain_mmap_read, 0, sizeof(IVSOCK));
+	memset(plain_mmap_write, 0, sizeof(IVSOCK));
 #endif
 
 	return 0;

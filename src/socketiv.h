@@ -9,6 +9,11 @@
 
 #include "intr.h"
 
+#define barrier() __asm__ __volatile__("": : :"memory")
+#define TOTAL_SIZE (1024 * 1024 * 1024)
+#define OFFSET (1024 * 1024)
+#define END_POINT (TOTAL_SIZE - OFFSET)
+
 #define unlikely(x)     __builtin_expect(!!(x), 0)
 
 int (*orig_open) (const char *, int, mode_t);

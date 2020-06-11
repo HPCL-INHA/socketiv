@@ -1,3 +1,5 @@
+#include "socketiv.h"
+
 #ifdef SOCKETIV_IN_HOST
 //static inline int socketiv_create_ivshmem(int sockfd, 무슨 인자?){
 // 호스트에서 동작하는 라이브러리 - ivshmem 생성}
@@ -17,20 +19,63 @@ static inline int socketiv_remove_ivshmem(int sockfd) {
 }
 #endif
 
-#define barrier() __asm__ __volatile__("": : :"memory")
-#define OFFSET (1024 * 1024)
-
 ssize_t socketiv_read(int fd, void *buf, size_t count) {
 	IVSOCK *ivsock = fd_to_ivsock_map[fd];
-	IVSM *ivsm = ivsock->ivsm_addr;
+	IVSM *ivsm = ivsock->ivsm_addr_read;
+	size_t to_read = 0; // if 문 안에서 처리할 바이트
+	size_t remain_cnt = count, processed_byte = 0;
 
-	// poll
-	while (ivsm->wptr - ivsm->rptr < count) {
-		usleep(SLEEP); // 시간 얼마? or clock_nanosleep()?
-	};
-	
-	memcpy(buf, (void*)ivsm + OFFSET + ivsm->rptr, count);
-	ivsm->rptr += count;
+	while (remain_cnt) {
+		// Poll
+		while ((ivsm->rptr == ivsm->wptr) && !ivsm->fulled)
+			usleep(SLEEP); // 시간 얼마? or clock_nanosleep()?
+
+		// 순환
+		if (ivsm->rptr > ivsm->wptr) {
+			to_read = END_POINT - ivsm->rptr;
+			
+			memcpy(buf + processed_byte, (void *)ivsm + OFFSET + ivsm->rptr, to_read);
+			remain_cnt -= to_read;
+			processed_byte += to_read;
+
+			ivsm->fulled = 0;
+			
+			ivsm->rptr = 0;
+
+			continue;
+		}
+
+		// partial-read
+		if (ivsm->rptr + remain_cnt > ivsm->wptr) {
+			to_read = ivsm->wptr - ivsm->rptr;
+
+			memcpy(buf + processed_byte, (void *)ivsm + OFFSET + ivsm->rptr, to_read);
+			remain_cnt -= to_read;
+			processed_byte += to_read;
+
+			ivsm->fulled = 0;
+
+			// 포인터가 엔드 포인트에 도달하면 0으로 변경
+			if (ivsm->rptr + to_read == END_POINT)
+				ivsm->rptr = 0;
+			else
+				ivsm->rptr += to_read;
+
+			continue;
+		}
+
+		// 마지막 읽기
+		memcpy(buf + processed_byte, (void *)ivsm + OFFSET + ivsm->rptr, remain_cnt);
+		remain_cnt = 0;
+
+		ivsm->fulled = 0;
+
+		// 포인터가 엔드 포인트에 도달하면 0으로 변경
+		if (ivsm->rptr + remain_cnt == END_POINT)
+			ivsm->rptr = 0;
+		else
+			ivsm->rptr += remain_cnt;
+	}
 
 	printf("IVSH: READ\n");
 
@@ -46,10 +91,62 @@ static inline int64_t getmstime(void) {
 
 ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 	IVSOCK *ivsock = fd_to_ivsock_map[fd];
-	IVSM *ivsm = ivsock->ivsm_addr;
+	IVSM *ivsm = ivsock->ivsm_addr_write;
+	size_t to_write = 0; // if 문 안에서 처리할 바이트
+	size_t remain_cnt = count, processed_byte = 0;
 
-	memcpy((void*)ivsm + OFFSET + ivsm->wptr, buf, count);
-	ivsm->wptr += count;
+	while (remain_cnt) {
+		// Poll
+		while ((ivsm->wptr == ivsm->rptr) && ivsm->fulled)
+			usleep(SLEEP); // 시간 얼마? or clock_nanosleep()?
+
+		// 순환
+		if ((ivsm->wptr + remain_cnt > END_POINT) && (ivsm->wptr >= ivsm->rptr)) {
+			to_write = END_POINT - ivsm->wptr;
+			
+			memcpy((void*)(buf + processed_byte), (void *)ivsm + OFFSET + ivsm->rptr, to_write);
+			remain_cnt -= to_write;
+			processed_byte += to_write;
+			
+			if(ivsm->wptr == ivsm->rptr)
+				ivsm->fulled = 1;
+
+			ivsm->wptr = 0;
+
+			continue;
+		}
+
+		// partial-write
+		if (ivsm->wptr < ivsm->rptr) {
+			to_write = ivsm->rptr - ivsm->wptr;
+
+			memcpy((void*)(buf + processed_byte), (void *)ivsm + OFFSET + ivsm->wptr, to_write);
+			remain_cnt -= to_write;
+			processed_byte += to_write;
+			
+			ivsm->fulled = 1;
+
+			// 포인터가 엔드 포인트에 도달하면 0으로 변경
+			if (ivsm->wptr + to_write == END_POINT)
+				ivsm->wptr = 0;
+			else
+				ivsm->wptr += to_write;
+			
+			continue;
+		}
+
+		// 마지막 쓰기
+		memcpy((void*)(buf + processed_byte), (void *)ivsm + OFFSET + ivsm->wptr, remain_cnt);
+		remain_cnt = 0;
+		if(ivsm->wptr + remain_cnt == ivsm->rptr)
+			ivsm->fulled = 1;
+
+		// 포인터가 엔드 포인트에 도달하면 0으로 변경
+		if (ivsm->wptr + remain_cnt == END_POINT)
+			ivsm->wptr = 0;
+		else
+			ivsm->wptr += remain_cnt;
+	}
 
 	printf("IVSH: WRITE\n");
 
