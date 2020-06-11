@@ -136,21 +136,5 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 	}
 
 	return count;
-
-	/*
-	IVSOCK *ivsock = fd_to_ivsock_map[fd];
-	IVSM *ivsm = ivsock->ivsm_addr_write;
-	size_t to_read = 0;
-
-	// rptr을 초과해서 쓰지 말자
-	while (ivsm->rptr < ) {
-		usleep(SLEEP); // 시간 얼마? or clock_nanosleep()?
-	};
-
-	memcpy((void*)ivsm + OFFSET + ivsm->wptr, buf, count);
-	ivsm->wptr += count;
-
-	return count;
-	*/
 }
 
