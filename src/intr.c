@@ -23,7 +23,8 @@ enum ivshmem_registers {
 
 static int doorbell_fd;
 static void *doorbell_mmap;
-static void *plain_mmap;
+static void *plain_mmap_read;
+static void *plain_mmap_write;
 
 void intr_send(const unsigned short dest)
 {
@@ -85,15 +86,23 @@ void intr_init()
 		exit(1);
 	}
 
-        pagesize = getpagesize();
-        addr = PHYS_ADDR & (~(pagesize - 1));
-	len = (PHYS_ADDR & (pagesize - 1)) + 1024L * 1024L * 1024L;
-
-	plain_mmap = mmap(NULL, len, PROT_READ | PROT_WRITE, MAP_SHARED, fd, addr);
-	if (plain_mmap == MAP_FAILED) {
+	pagesize = getpagesize();
+	addr = PHYS_ADDR_READ & (~(pagesize - 1));
+	len = (PHYS_ADDR_READ & (pagesize - 1)) + TOTAL_SIZE;
+	plain_mmap_read = mmap(NULL, len, PROT_READ | PROT_WRITE, MAP_SHARED, fd, addr);
+	if (plain_mmap_read == MAP_FAILED) {
 		perror("Failed to mmap plain device path");
 		exit(1);
 	}
+
+	addr = PHYS_ADDR_WRITE & (~(pagesize - 1));
+	len = (PHYS_ADDR_WRITE & (pagesize - 1)) + TOTAL_SIZE;
+	plain_mmap_write = mmap(NULL, len, PROT_READ | PROT_WRITE, MAP_SHARED, fd, addr);
+	if (plain_mmap_write == MAP_FAILED) {
+		perror("Failed to mmap plain device path");
+		exit(1);
+	}
+
 	close(fd);
 
 	// Setup interrupt quirk thread to send occasional interrupts
