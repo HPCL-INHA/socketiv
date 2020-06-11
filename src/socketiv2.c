@@ -35,10 +35,12 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 			to_read = END_POINT - ivsm->rptr;
 			
 			memcpy(buf + processed_byte, (void *)ivsm + OFFSET + ivsm->rptr, to_read);
-			ivsm->rptr = 0;
 			remain_cnt -= to_read;
 			processed_byte += to_read;
+
 			ivsm->fulled = 0;
+			
+			ivsm->rptr = 0;
 
 			continue;
 		}
@@ -48,27 +50,31 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 			to_read = ivsm->wptr - ivsm->rptr;
 
 			memcpy(buf + processed_byte, (void *)ivsm + OFFSET + ivsm->rptr, to_read);
-			ivsm->rptr += to_read;
 			remain_cnt -= to_read;
 			processed_byte += to_read;
+
 			ivsm->fulled = 0;
 
-			// 예외 처리
-			if (ivsm->rptr == END_POINT)
+			// 포인터가 엔드 포인트에 도달하면 0으로 변경
+			if (ivsm->rptr + to_read == END_POINT)
 				ivsm->rptr = 0;
+			else
+				ivsm->rptr += to_read;
 
 			continue;
 		}
 
 		// 마지막 읽기
 		memcpy(buf + processed_byte, (void *)ivsm + OFFSET + ivsm->rptr, remain_cnt);
-		ivsm->rptr += remain_cnt;
 		remain_cnt = 0;
+
 		ivsm->fulled = 0;
 
-		// 예외 처리
-		if (ivsm->rptr == END_POINT)
+		// 포인터가 엔드 포인트에 도달하면 0으로 변경
+		if (ivsm->rptr + remain_cnt == END_POINT)
 			ivsm->rptr = 0;
+		else
+			ivsm->rptr += remain_cnt;
 	}
 
 	return count;
@@ -97,11 +103,13 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 			to_write = END_POINT - ivsm->wptr;
 			
 			memcpy(buf + processed_byte, (void *)ivsm + OFFSET + ivsm->rptr, to_write);
-			ivsm->wptr = 0;
 			remain_cnt -= to_write;
 			processed_byte += to_write;
+			
 			if(ivsm->wptr == ivsm->rptr)
 				ivsm->fulled = 1;
+
+			ivsm->wptr = 0;
 
 			continue;
 		}
@@ -111,28 +119,31 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 			to_write = ivsm->rptr - ivsm->wptr;
 
 			memcpy(buf + processed_byte, (void *)ivsm + OFFSET + ivsm->wptr, to_write);
-			ivsm->wptr += to_write;
 			remain_cnt -= to_write;
 			processed_byte += to_write;
+			
 			ivsm->fulled = 1;
 
-			// 예외 처리
-			if (ivsm->wptr == END_POINT)
+			// 포인터가 엔드 포인트에 도달하면 0으로 변경
+			if (ivsm->wptr + to_write == END_POINT)
 				ivsm->wptr = 0;
-
+			else
+				ivsm->wptr += to_write;
+			
 			continue;
 		}
 
 		// 마지막 쓰기
 		memcpy(buf + processed_byte, (void *)ivsm + OFFSET + ivsm->wptr, remain_cnt);
-		ivsm->wptr += remain_cnt;
 		remain_cnt = 0;
-		if(ivsm->wptr == ivsm->rptr)
+		if(ivsm->wptr + remain_cnt == ivsm->rptr)
 			ivsm->fulled = 1;
 
-		// 예외 처리
-		if (ivsm->wptr == END_POINT)
+		// 포인터가 엔드 포인트에 도달하면 0으로 변경
+		if (ivsm->wptr + remain_cnt == END_POINT)
 			ivsm->wptr = 0;
+		else
+			ivsm->wptr += remain_cnt;
 	}
 
 	return count;
