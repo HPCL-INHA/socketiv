@@ -21,22 +21,23 @@ static inline int socketiv_remove_ivshmem(int sockfd) {
 
 ssize_t socketiv_read(int fd, void *buf, size_t count) {
 	IVSOCK *ivsock = fd_to_ivsock_map[fd];
+	size_t to_read = 0; // if 문 안에서 처리할 바이트
+	size_t remain_cnt = count, processed_byte = 0;
+
 #ifdef CLIENT
 	IVSM *ivsm = ivsock->ivsm_addr_read;
 #else
 	IVSM *ivsm = ivsock->ivsm_addr_write;
 #endif
-	size_t to_read = 0; // if 문 안에서 처리할 바이트
-	size_t remain_cnt = count, processed_byte = 0;
 
 	while (remain_cnt) {
 		// Poll
 		while ((ivsm->rptr == ivsm->wptr) && !ivsm->fulled)
 			usleep(SLEEP); // 시간 얼마? or clock_nanosleep()?
 
-		// 순환
-		if (ivsm->rptr > ivsm->wptr) {
-			to_read = END_POINT - ivsm->rptr;
+		// Partial-Read Until Endpoint
+		if ((ivsm->rptr > ivsm->wptr) || ivsm->fulled) {
+			to_read = ENDPOINT - ivsm->rptr;
 			
 			memcpy(buf + processed_byte, (void *)ivsm + OFFSET + ivsm->rptr, to_read);
 			remain_cnt -= to_read;
@@ -49,7 +50,7 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 			continue;
 		}
 
-		// partial-read
+		// Partial-Read Until Write Pointer
 		if (ivsm->rptr + remain_cnt > ivsm->wptr) {
 			to_read = ivsm->wptr - ivsm->rptr;
 
@@ -60,7 +61,7 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 			ivsm->fulled = 0;
 
 			// 포인터가 엔드 포인트에 도달하면 0으로 변경
-			if (ivsm->rptr + to_read == END_POINT)
+			if (ivsm->rptr + to_read == ENDPOINT)
 				ivsm->rptr = 0;
 			else
 				ivsm->rptr += to_read;
@@ -71,11 +72,10 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 		// 마지막 읽기
 		memcpy(buf + processed_byte, (void *)ivsm + OFFSET + ivsm->rptr, remain_cnt);
 		remain_cnt = 0;
-
 		ivsm->fulled = 0;
 
 		// 포인터가 엔드 포인트에 도달하면 0으로 변경
-		if (ivsm->rptr + remain_cnt == END_POINT)
+		if (ivsm->rptr + remain_cnt == ENDPOINT)
 			ivsm->rptr = 0;
 		else
 			ivsm->rptr += remain_cnt;
@@ -95,30 +95,31 @@ static inline int64_t getmstime(void) {
 
 ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 	IVSOCK *ivsock = fd_to_ivsock_map[fd];
+	size_t to_write = 0; // if 문 안에서 처리할 바이트
+	size_t remain_cnt = count, processed_byte = 0;
+
 #ifdef CLIENT
 	IVSM *ivsm = ivsock->ivsm_addr_write;
 #else
 	IVSM *ivsm = ivsock->ivsm_addr_read;
 #endif
-	size_t to_write = 0; // if 문 안에서 처리할 바이트
-	size_t remain_cnt = count, processed_byte = 0;
 
 	while (remain_cnt) {
 		printf("remain_cnt: %lu\n", remain_cnt);
-		printf("WPTR: %lu, RPTR: %lu, fulled: %d\n", ivsm->wptr, ivsm->rptr, ivsm->fulled);
+		printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", ivsm->wptr, ivsm->rptr, ivsm->fulled, remain_cnt);
 		// Poll
 		while ((ivsm->wptr == ivsm->rptr) && ivsm->fulled)
 			usleep(SLEEP); // 시간 얼마? or clock_nanosleep()?
 
-		// 순환
-		if ((ivsm->wptr + remain_cnt > END_POINT) && (ivsm->wptr >= ivsm->rptr)) {
-			to_write = END_POINT - ivsm->wptr;
+		// Partial-Write Until Endpoint
+		if ((ivsm->wptr + remain_cnt > ENDPOINT) && (ivsm->wptr >= ivsm->rptr)) {
+			to_write = ENDPOINT - ivsm->wptr;
 			printf("fuck\n");
 			memcpy((void*)(buf + processed_byte), (void *)ivsm + OFFSET + ivsm->rptr, to_write);
 			remain_cnt -= to_write;
 			processed_byte += to_write;
-			
-			if(ivsm->wptr == ivsm->rptr)
+
+			if(0 == ivsm->rptr)
 				ivsm->fulled = 1;
 
 			ivsm->wptr = 0;
@@ -126,26 +127,7 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 			continue;
 		}
 
-		// partial-write
-		if (remain_cnt > END_POINT) {
-			to_write = END_POINT;
-
-			memcpy((void*)(buf + processed_byte), (void *)ivsm + OFFSET + ivsm->wptr, to_write);
-			remain_cnt -= to_write;
-			processed_byte += to_write;
-			
-			ivsm->fulled = 1;
-
-			// 포인터가 엔드 포인트에 도달하면 0으로 변경
-			if (ivsm->wptr + to_write == END_POINT)
-				ivsm->wptr = 0;
-			else
-				ivsm->wptr += to_write;
-			
-			continue;
-		}
-
-		// partial-write
+		// Partial-Write Until Read Pointer
 		if (ivsm->wptr < ivsm->rptr) {
 			to_write = ivsm->rptr - ivsm->wptr;
 
@@ -156,7 +138,7 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 			ivsm->fulled = 1;
 
 			// 포인터가 엔드 포인트에 도달하면 0으로 변경
-			if (ivsm->wptr + to_write == END_POINT)
+			if (ivsm->wptr + to_write == ENDPOINT)
 				ivsm->wptr = 0;
 			else
 				ivsm->wptr += to_write;
@@ -167,11 +149,11 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 		// 마지막 쓰기
 		memcpy((void*)(buf + processed_byte), (void *)ivsm + OFFSET + ivsm->wptr, remain_cnt);
 		remain_cnt = 0;
-		if(ivsm->wptr + remain_cnt == ivsm->rptr)
+		if((ivsm->wptr + remain_cnt == ivsm->rptr) || (ivsm->wptr + remain_cnt == ENDPOINT))
 			ivsm->fulled = 1;
 
 		// 포인터가 엔드 포인트에 도달하면 0으로 변경
-		if (ivsm->wptr + remain_cnt == END_POINT) {
+		if (ivsm->wptr + remain_cnt == ENDPOINT) {
 			printf("1111\n");
 			ivsm->wptr = 0;
 		} else {
