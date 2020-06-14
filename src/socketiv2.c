@@ -26,6 +26,8 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 	IVSM *ivsm = ivsock->ivsm_addr_read;
 
 	while (remain_cnt) {
+		printf("remain_cnt: %lu\n", remain_cnt);
+		printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", ivsm->wptr, ivsm->rptr, ivsm->fulled, remain_cnt);
 		// Poll
 		while ((ivsm->rptr == ivsm->wptr) && !ivsm->fulled)
 			usleep(SLEEP); // 시간 얼마? or clock_nanosleep()?
@@ -33,7 +35,7 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 		// Partial-Read Until Endpoint
 		if ((ivsm->rptr > ivsm->wptr) || ivsm->fulled) {
 			to_read = ENDPOINT - ivsm->rptr;
-			
+			printf("fuck\n");			
 			memcpy(buf + processed_byte, (void *)ivsm + OFFSET + ivsm->rptr, to_read);
 			remain_cnt -= to_read;
 			processed_byte += to_read;
@@ -70,10 +72,13 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 		ivsm->fulled = 0;
 
 		// 포인터가 엔드 포인트에 도달하면 0으로 변경
-		if (ivsm->rptr + remain_cnt == ENDPOINT)
+		if (ivsm->rptr + remain_cnt == ENDPOINT) {
+			printf("1111\n");
 			ivsm->rptr = 0;
-		else
+		} else {
+			printf("2222\n");
 			ivsm->rptr += remain_cnt;
+		}
 	}
 
 	printf("IVSH: READ\n");
