@@ -23,12 +23,7 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 	IVSOCK *ivsock = fd_to_ivsock_map[fd];
 	size_t to_read = 0; // if 문 안에서 처리할 바이트
 	size_t remain_cnt = count, processed_byte = 0;
-
-#ifdef CLIENT
 	IVSM *ivsm = ivsock->ivsm_addr_read;
-#else
-	IVSM *ivsm = ivsock->ivsm_addr_write;
-#endif
 
 	while (remain_cnt) {
 		// Poll
@@ -97,12 +92,7 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 	IVSOCK *ivsock = fd_to_ivsock_map[fd];
 	size_t to_write = 0; // if 문 안에서 처리할 바이트
 	size_t remain_cnt = count, processed_byte = 0;
-
-#ifdef CLIENT
 	IVSM *ivsm = ivsock->ivsm_addr_write;
-#else
-	IVSM *ivsm = ivsock->ivsm_addr_read;
-#endif
 
 	while (remain_cnt) {
 		printf("remain_cnt: %lu\n", remain_cnt);
