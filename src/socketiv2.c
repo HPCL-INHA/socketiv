@@ -27,8 +27,11 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 
 	while (remain_cnt) {
 		// Poll
-		while ((ivsm->rptr == ivsm->wptr) && !ivsm->fulled)
+		while ((ivsm->rptr == ivsm->wptr) && !ivsm->fulled){
+			if(!ivsm->enabled)
+				return -1;
 			usleep(SLEEP); // 시간 얼마? or clock_nanosleep()?
+		}
 
 		// Partial-Read Until Endpoint
 		if ((ivsm->rptr > ivsm->wptr) || ivsm->fulled){
@@ -113,6 +116,9 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 	IVSM *ivsm = ivsock->ivsm_addr_write;
 
 	while (remain_cnt) {
+		if (!ivsm->enabled)
+			return -1;
+
 		// Poll
 		while ((ivsm->wptr == ivsm->rptr) && ivsm->fulled)
 			usleep(SLEEP); // 시간 얼마? or clock_nanosleep()?

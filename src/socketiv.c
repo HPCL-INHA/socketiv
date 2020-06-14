@@ -22,6 +22,7 @@ struct ivsm {
 	size_t rptr;
 	size_t wptr;
 	int fulled;
+	int enabled;
 } __attribute__((aligned(ALIGN), packed));
 
 typedef struct ivsm IVSM;
@@ -107,9 +108,17 @@ static inline int attach_new_ivsock_to_fd(int fd) {
 #endif
 	memset(ivsock->ivsm_addr_write, 0, sizeof(IVSOCK));
 
+	// 자기가 write하는 파트의 enabled 비트 끄기
+	fd_to_ivsock_map[fd]->ivsm_addr_write->enabled = 1;
+
+
 	return 0;
 }
 static inline int detach_ivsock_from_fd(int fd) {
+	// 모든 파트의 enabled 비트 끄기
+	fd_to_ivsock_map[fd]->ivsm_addr_write->enabled = 0;
+	fd_to_ivsock_map[fd]->ivsm_addr_read->enabled = 0;
+
 	return 0; // NOOP ATM
 
 	if ((fd + 1) == fd_to_ivsock_map_size)
