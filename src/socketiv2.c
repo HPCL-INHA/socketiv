@@ -26,6 +26,7 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 	IVSM *ivsm = ivsock->ivsm_addr_read;
 
 	while (remain_cnt) {
+
 		printf("remain_cnt: %lu\n", remain_cnt);
 		printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", ivsm->wptr, ivsm->rptr, ivsm->fulled, remain_cnt);
 		// Poll
@@ -34,8 +35,9 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 
 		// Partial-Read Until Endpoint
 		if ((ivsm->rptr > ivsm->wptr) || ivsm->fulled) {
+			puts("(partial-read until endpoint)");
 			to_read = ENDPOINT - ivsm->rptr;
-			printf("fuck\n");			
+
 			memcpy(buf + processed_byte, (void *)ivsm + OFFSET + ivsm->rptr, to_read);
 			remain_cnt -= to_read;
 			processed_byte += to_read;
@@ -49,6 +51,7 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 
 		// Partial-Read Until Write Pointer
 		if (ivsm->rptr + remain_cnt > ivsm->wptr) {
+			puts("(partial-read until write pointer)");
 			to_read = ivsm->wptr - ivsm->rptr;
 
 			memcpy(buf + processed_byte, (void *)ivsm + OFFSET + ivsm->rptr, to_read);
