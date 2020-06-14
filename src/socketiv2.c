@@ -67,18 +67,24 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 		}
 
 		// 마지막 읽기
+		puts("final read");
+		printf("processed_byte: %lu\n", processed_byte);
+		printf("ivsm->rptr: %lu\n", ivsm->rptr);
+		printf("processed_byte: %lu\n", processed_byte);
 		memcpy(buf + processed_byte, (void *)ivsm + OFFSET + ivsm->rptr, remain_cnt);
 		remain_cnt = 0;
 		ivsm->fulled = 0;
+		puts("final read end");
+		printf("ivsm->fulled: %d\n", ivsm->fulled);
 
 		// 포인터가 엔드 포인트에 도달하면 0으로 변경
 		if (ivsm->rptr + remain_cnt == ENDPOINT) {
-			printf("1111\n");
+			puts("(rptr reached endpoint)");
 			ivsm->rptr = 0;
 		} else {
-			printf("2222\n");
 			ivsm->rptr += remain_cnt;
 		}
+		printf("ivsm->rtpr: %lu\n", ivsm->rptr);
 	}
 
 	printf("IVSH: READ\n");
@@ -109,8 +115,8 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 		// Partial-Write Until Endpoint
 		if ((ivsm->wptr + remain_cnt > ENDPOINT) && (ivsm->wptr >= ivsm->rptr)) {
 			to_write = ENDPOINT - ivsm->wptr;
-			printf("fuck\n");
-			memcpy((void*)(buf + processed_byte), (void *)ivsm + OFFSET + ivsm->rptr, to_write);
+			
+			memcpy((void *)ivsm + OFFSET + ivsm->wptr, (void*)(buf + processed_byte), to_write);
 			remain_cnt -= to_write;
 			processed_byte += to_write;
 
@@ -126,7 +132,7 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 		if (ivsm->wptr < ivsm->rptr) {
 			to_write = ivsm->rptr - ivsm->wptr;
 
-			memcpy((void*)(buf + processed_byte), (void *)ivsm + OFFSET + ivsm->wptr, to_write);
+			memcpy((void *)ivsm + OFFSET + ivsm->wptr, (void*)(buf + processed_byte), to_write);
 			remain_cnt -= to_write;
 			processed_byte += to_write;
 			
@@ -142,7 +148,7 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 		}
 
 		// 마지막 쓰기
-		memcpy((void*)(buf + processed_byte), (void *)ivsm + OFFSET + ivsm->wptr, remain_cnt);
+		memcpy((void *)ivsm + OFFSET + ivsm->wptr, (void*)(buf + processed_byte), remain_cnt);
 		remain_cnt = 0;
 		if((ivsm->wptr + remain_cnt == ivsm->rptr) || (ivsm->wptr + remain_cnt == ENDPOINT))
 			ivsm->fulled = 1;
