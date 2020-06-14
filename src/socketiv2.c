@@ -22,7 +22,7 @@ static inline int socketiv_remove_ivshmem(int sockfd) {
 ssize_t socketiv_read(int fd, void *buf, size_t count) {
 	IVSOCK *ivsock = fd_to_ivsock_map[fd];
 	size_t to_read = 0; // if 문 안에서 처리할 바이트
-	size_t remain_cnt = count, processed_byte = 0;
+	size_t remain_cnt = count, prev_remain_cnt, processed_byte = 0;
 	IVSM *ivsm = ivsock->ivsm_addr_read;
 
 	while (remain_cnt) {
@@ -77,17 +77,20 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 		printf("ivsm->rptr: %lu\n", ivsm->rptr);
 		printf("processed_byte: %lu\n", processed_byte);
 		memcpy(buf + processed_byte, (void *)ivsm + OFFSET + ivsm->rptr, remain_cnt);
+
+		prev_remain_cnt = remain_cnt;
 		remain_cnt = 0;
+
 		ivsm->fulled = 0;
 		puts("final read end");
 		printf("ivsm->fulled: %d\n", ivsm->fulled);
 
 		// 포인터가 엔드 포인트에 도달하면 0으로 변경
-		if (ivsm->rptr + remain_cnt == ENDPOINT) {
+		if (ivsm->rptr + prev_remain_cnt == ENDPOINT) {
 			puts("(rptr reached endpoint)");
 			ivsm->rptr = 0;
 		} else
-			ivsm->rptr += remain_cnt;
+			ivsm->rptr += prev_remain_cnt;
 		printf("ivsm->rtpr: %lu\n", ivsm->rptr);
 	}
 
@@ -106,7 +109,7 @@ static inline int64_t getmstime(void) {
 ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 	IVSOCK *ivsock = fd_to_ivsock_map[fd];
 	size_t to_write = 0; // if 문 안에서 처리할 바이트
-	size_t remain_cnt = count, prev_remain_cnt = 0, processed_byte = 0;
+	size_t remain_cnt = count, prev_remain_cnt, processed_byte = 0;
 	IVSM *ivsm = ivsock->ivsm_addr_write;
 
 	while (remain_cnt) {
@@ -157,19 +160,21 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 
 		// 마지막 쓰기
 		printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", ivsm->wptr, ivsm->rptr, ivsm->fulled, remain_cnt);
-		puts("(final write stage");
+		puts("(final write stage)");
 		memcpy((void *)ivsm + OFFSET + ivsm->wptr, (void*)(buf + processed_byte), remain_cnt);
 		prev_remain_cnt = remain_cnt;
+
 		remain_cnt = 0;
+		
 		if((ivsm->wptr + prev_remain_cnt == ivsm->rptr) || (ivsm->wptr + prev_remain_cnt == ENDPOINT))
 			ivsm->fulled = 1;
 
 		// 포인터가 엔드 포인트에 도달하면 0으로 변경
-		if (ivsm->wptr + remain_cnt == ENDPOINT) {
+		if (ivsm->wptr + prev_remain_cnt == ENDPOINT) {
 			puts("(wptr reached endpoint)");
 			ivsm->wptr = 0;
 		} else
-			ivsm->wptr += remain_cnt;
+			ivsm->wptr += prev_remain_cnt;
 		printf("ivsm->wtpr: %lu\n", ivsm->wptr);
 	}
 
