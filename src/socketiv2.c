@@ -26,17 +26,16 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 	IVSM *ivsm = ivsock->ivsm_addr_read;
 
 	while (remain_cnt) {
-
-		printf("remain_cnt: %lu\n", remain_cnt);
-		printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", ivsm->wptr, ivsm->rptr, ivsm->fulled, remain_cnt);
 		// Poll
 		while ((ivsm->rptr == ivsm->wptr) && !ivsm->fulled)
 			usleep(SLEEP); // 시간 얼마? or clock_nanosleep()?
 
 		// Partial-Read Until Endpoint
-		if ((ivsm->rptr > ivsm->wptr) || ivsm->fulled) {
+		if ((ivsm->rptr > ivsm->wptr) || ivsm->fulled){
+			printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", ivsm->wptr, ivsm->rptr, ivsm->fulled, remain_cnt);
 			puts("(partial-read until endpoint)");
 			to_read = ENDPOINT - ivsm->rptr;
+			printf("to_read: %lu", to_read);
 
 			memcpy(buf + processed_byte, (void *)ivsm + OFFSET + ivsm->rptr, to_read);
 			remain_cnt -= to_read;
@@ -51,8 +50,10 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 
 		// Partial-Read Until Write Pointer
 		if (ivsm->rptr + remain_cnt > ivsm->wptr) {
+			printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", ivsm->wptr, ivsm->rptr, ivsm->fulled, remain_cnt);
 			puts("(partial-read until write pointer)");
 			to_read = ivsm->wptr - ivsm->rptr;
+			printf("to_read: %lu", to_read);
 
 			memcpy(buf + processed_byte, (void *)ivsm + OFFSET + ivsm->rptr, to_read);
 			remain_cnt -= to_read;
@@ -70,7 +71,8 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 		}
 
 		// 마지막 읽기
-		puts("final read");
+		printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", ivsm->wptr, ivsm->rptr, ivsm->fulled, remain_cnt);
+		puts("(final read)");
 		printf("processed_byte: %lu\n", processed_byte);
 		printf("ivsm->rptr: %lu\n", ivsm->rptr);
 		printf("processed_byte: %lu\n", processed_byte);
@@ -109,15 +111,16 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 	IVSM *ivsm = ivsock->ivsm_addr_write;
 
 	while (remain_cnt) {
-		printf("remain_cnt: %lu\n", remain_cnt);
-		printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", ivsm->wptr, ivsm->rptr, ivsm->fulled, remain_cnt);
 		// Poll
 		while ((ivsm->wptr == ivsm->rptr) && ivsm->fulled)
 			usleep(SLEEP); // 시간 얼마? or clock_nanosleep()?
 
 		// Partial-Write Until Endpoint
 		if ((ivsm->wptr + remain_cnt > ENDPOINT) && (ivsm->wptr >= ivsm->rptr)) {
+			printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", ivsm->wptr, ivsm->rptr, ivsm->fulled, remain_cnt);
+			puts("(partial-write until endpoint)");
 			to_write = ENDPOINT - ivsm->wptr;
+			printf("to_write: %lu", to_write);
 			
 			memcpy((void *)ivsm + OFFSET + ivsm->wptr, (void*)(buf + processed_byte), to_write);
 			remain_cnt -= to_write;
@@ -133,7 +136,10 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 
 		// Partial-Write Until Read Pointer
 		if (ivsm->wptr < ivsm->rptr) {
+			printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", ivsm->wptr, ivsm->rptr, ivsm->fulled, remain_cnt);
+			puts("(partial-write until write pointer)");
 			to_write = ivsm->rptr - ivsm->wptr;
+			printf("to_write: %lu", to_write);
 
 			memcpy((void *)ivsm + OFFSET + ivsm->wptr, (void*)(buf + processed_byte), to_write);
 			remain_cnt -= to_write;
@@ -151,6 +157,7 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 		}
 
 		// 마지막 쓰기
+		printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", ivsm->wptr, ivsm->rptr, ivsm->fulled, remain_cnt);
 		memcpy((void *)ivsm + OFFSET + ivsm->wptr, (void*)(buf + processed_byte), remain_cnt);
 		remain_cnt = 0;
 		if((ivsm->wptr + remain_cnt == ivsm->rptr) || (ivsm->wptr + remain_cnt == ENDPOINT))
