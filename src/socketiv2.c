@@ -36,9 +36,10 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 		// Partial-Read Until Endpoint
 		if ((ivsm->rptr > ivsm->wptr) || ivsm->fulled){
 			printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", ivsm->wptr, ivsm->rptr, ivsm->fulled, remain_cnt);
+			printf("count: %lu, processed_byte: %lu, to_read: %lu\n", count, processed_byte, to_read);
 			puts("(partial-read until endpoint)");
 			to_read = ENDPOINT - ivsm->rptr;
-			printf("to_read: %lu", to_read);
+			printf("to_read: %lu\n", to_read);
 
 			memcpy(buf + processed_byte, (void *)ivsm + OFFSET + ivsm->rptr, to_read);
 			remain_cnt -= to_read;
@@ -54,9 +55,10 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 		// Partial-Read Until Write Pointer
 		if (ivsm->rptr + remain_cnt > ivsm->wptr) {
 			printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", ivsm->wptr, ivsm->rptr, ivsm->fulled, remain_cnt);
+			printf("count: %lu, processed_byte: %lu, to_read: %lu\n", count, processed_byte, to_read);
 			puts("(partial-read until write pointer)");
 			to_read = ivsm->wptr - ivsm->rptr;
-			printf("to_read: %lu", to_read);
+			printf("to_read: %lu\n", to_read);
 
 			memcpy(buf + processed_byte, (void *)ivsm + OFFSET + ivsm->rptr, to_read);
 			remain_cnt -= to_read;
@@ -75,6 +77,7 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 
 		// 마지막 읽기
 		printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", ivsm->wptr, ivsm->rptr, ivsm->fulled, remain_cnt);
+		printf("count: %lu, processed_byte: %lu, to_read: %lu\n", count, processed_byte, to_read);
 		puts("(final read)");
 		printf("processed_byte: %lu\n", processed_byte);
 		printf("ivsm->rptr: %lu\n", ivsm->rptr);
@@ -97,7 +100,7 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 		printf("ivsm->rtpr: %lu\n", ivsm->rptr);
 	}
 
-	printf("IVSH: READ\n");
+	printf(" IVSH: READ %lu\n", count);
 
 	return count;
 }
@@ -128,7 +131,7 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 			printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", ivsm->wptr, ivsm->rptr, ivsm->fulled, remain_cnt);
 			puts("(partial-write until endpoint)");
 			to_write = ENDPOINT - ivsm->wptr;
-			printf("to_write: %lu", to_write);
+			printf("to_write: %lu\n", to_write);
 			
 			memcpy((void *)ivsm + OFFSET + ivsm->wptr, (void*)(buf + processed_byte), to_write);
 			remain_cnt -= to_write;
@@ -143,11 +146,12 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 		}
 
 		// Partial-Write Until Read Pointer
-		if (ivsm->wptr < ivsm->rptr) {
+		if (ivsm->wptr + remain_cnt > ivsm->rptr && ivsm->wptr < ivsm->rptr) {
+//		if (ivsm->wptr < ivsm->rptr) {
 			printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", ivsm->wptr, ivsm->rptr, ivsm->fulled, remain_cnt);
 			puts("(partial-write until write pointer)");
 			to_write = ivsm->rptr - ivsm->wptr;
-			printf("to_write: %lu", to_write);
+			printf("to_write: %lu\n", to_write);
 
 			memcpy((void *)ivsm + OFFSET + ivsm->wptr, (void*)(buf + processed_byte), to_write);
 			remain_cnt -= to_write;

@@ -76,7 +76,7 @@ static void __attribute__((constructor)) socketiv_init() { // initialize SocketI
 	orig_close = (int (*)(int))dlsym(RTLD_NEXT, "close");
 }
 
-static inline int attach_new_ivsock_to_fd(int fd) {
+int attach_new_ivsock_to_fd(int fd) {
 	if (fd >= fd_to_ivsock_map_size) {
 		if (fd >= fd_to_ivsock_map_reserve) {
 			fd_to_ivsock_map = realloc(fd_to_ivsock_map, sizeof(fd_to_ivsock_map) * (fd_to_ivsock_map_reserve * 2));
@@ -121,6 +121,9 @@ static inline int detach_ivsock_from_fd(int fd) {
 	fd_to_ivsock_map[fd]->ivsm_addr_write->enabled = 0;
 	fd_to_ivsock_map[fd]->ivsm_addr_read->enabled = 0;
 
+	free(fd_to_ivsock_map[fd]);
+	fd_to_ivsock_map[fd] = NULL;
+
 	return 0; // NOOP ATM
 
 	if ((fd + 1) == fd_to_ivsock_map_size)
@@ -142,6 +145,7 @@ static inline int detach_ivsock_from_fd(int fd) {
 
 #define VIRT_NET_ADDR_SPACE "192.168.122"
 bool socketiv_check_vm_subnet(const struct sockaddr *addr) { // (장기적 수정 필요) determine whether this address belongs to a virtual network
+return true;
 	struct sockaddr_in *addr_in = (struct sockaddr_in *)addr;
 	char *addr_str = inet_ntoa(addr_in->sin_addr);
 
@@ -150,12 +154,14 @@ bool socketiv_check_vm_subnet(const struct sockaddr *addr) { // (장기적 수�
 	if (ret) puts("YES"); else puts("NO"); return ret;
 }
 int socketiv_accept(int new_sockfd) {
-	return attach_new_ivsock_to_fd(new_sockfd);
+//	return attach_new_ivsock_to_fd(new_sockfd);
 }
 int socketiv_connect(int sockfd) {
-	return attach_new_ivsock_to_fd(sockfd);
+//	return attach_new_ivsock_to_fd(sockfd);
 }
-
+int socketiv_socket(int fd) {
+//	return attach_new_ivsock_to_fd(fd);
+}
 bool socketiv_check_ivsock(int fd) { // determine whether this file descriptor has been paired with an inter-vm socket
 	if (fd < fd_to_ivsock_map_size && fd_to_ivsock_map[fd])
 		return true;

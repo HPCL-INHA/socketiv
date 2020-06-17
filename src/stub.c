@@ -7,11 +7,17 @@
 int open(const char *pathname, int flags, mode_t mode) { // open file
 	return orig_open(pathname, flags, mode);
 }
+#endif
 
 int socket(int domain, int type, int protocol) { // create socket
-	return orig_socket(domain, type, protocol);
+	int ret = orig_socket(domain, type, protocol);
+	if (ret >= 0) {
+		if (true) {
+			socketiv_socket(ret);
+		}
+	}
+	return ret;
 }
-#endif
 
 int accept2(int sockfd, struct sockaddr *addr, socklen_t * addrlen) { // create new socket requested by passive socket
 printf("IVSH: %s++\n", __func__);
