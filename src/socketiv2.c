@@ -106,7 +106,7 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 
 		// Update Shared Variables
 		ivsm->fulled = 0;
-		if (ivsm->rptr + prev_remain_cnt == ENDPOINT) { // 포인터가 엔드 포인트에 도달하면 0으로 변경
+		if (temp_rptr + prev_remain_cnt == ENDPOINT) { // 포인터가 엔드 포인트에 도달하면 0으로 변경
 			puts("(rptr reached endpoint)");
 			ivsm->rptr = 0;
 		} else
@@ -147,6 +147,11 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 		while ((ivsm->wptr == ivsm->rptr) && ivsm->fulled)
 			usleep(SLEEP); // 시간 얼마? or clock_nanosleep()?
 
+		printf("\n");
+		printf("[remain_cnt]: %lu\n", remain_cnt);
+		printf("[processed_byte]: %lu\n", processed_byte);
+		printf("\n");
+
 		// Partial-Write Until Endpoint
 		temp_rptr = ivsm->rptr;
 		temp_wptr = ivsm->wptr;
@@ -176,7 +181,7 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 		temp_wptr = ivsm->wptr;
 		temp_fulled = ivsm->fulled;
 		temp_enabled = ivsm->enabled;
-		if (ivsm->wptr + remain_cnt > ivsm->rptr && ivsm->wptr < ivsm->rptr) {
+		if (temp_wptr + remain_cnt > temp_rptr && temp_wptr < temp_rptr) {
 			printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", temp_wptr, temp_rptr, temp_fulled, remain_cnt);
 
 			puts("(partial-write until read pointer)");
@@ -209,7 +214,7 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 		// Update Shared Variables
 		if((temp_wptr + prev_remain_cnt == temp_rptr) || (temp_wptr + prev_remain_cnt == ENDPOINT))
 			ivsm->fulled = 1;
-		if (ivsm->wptr + prev_remain_cnt == ENDPOINT) { // 포인터가 엔드 포인트에 도달하면 0으로 변경
+		if (temp_wptr + prev_remain_cnt == ENDPOINT) { // 포인터가 엔드 포인트에 도달하면 0으로 변경
 			puts("(wptr reached endpoint)");
 			ivsm->wptr = 0;
 		} else
