@@ -44,7 +44,7 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 		}
 
 		printf("\n");
-		printf("[ivsm->enabled]: %d", ivsm->enabled);
+		printf("[ivsm->enabled]: %d\n", ivsm->enabled);
 		printf("[remain_cnt]: %lu\n", remain_cnt);
 		printf("[processed_byte]: %lu\n", processed_byte);
 		printf("\n");
@@ -153,7 +153,7 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 			usleep(SLEEP); // 시간 얼마? or clock_nanosleep()?
 
 		printf("\n");
-		printf("[ivsm->enabled]: %d", ivsm->enabled);
+		printf("[ivsm->enabled]: %d\n", ivsm->enabled);
 		printf("[remain_cnt]: %lu\n", remain_cnt);
 		printf("[processed_byte]: %lu\n", processed_byte);
 		printf("\n");
