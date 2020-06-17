@@ -131,6 +131,8 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 	size_t remain_cnt = count, prev_remain_cnt, processed_byte = 0;
 	IVSM *ivsm = ivsock->ivsm_addr_write;
 
+	size_t temp_rptr, temp_wptr, temp_fulled, temp_enabled; // temporal storage for shared variable
+
 	while (remain_cnt) {
 		// fulled 레이스 컨디션 수정 - 수정 필요하거나 삭제하게 될 수 있음
 		if (ivsm->wptr != ivsm->rptr)
@@ -146,64 +148,72 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 			usleep(SLEEP); // 시간 얼마? or clock_nanosleep()?
 
 		// Partial-Write Until Endpoint
-		if ((ivsm->wptr + remain_cnt > ENDPOINT) && (ivsm->wptr >= ivsm->rptr)) {
-			printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", ivsm->wptr, ivsm->rptr, ivsm->fulled, remain_cnt);
+		temp_rptr = ivsm->rptr;
+		temp_wptr = ivsm->wptr;
+		temp_fulled = ivsm->fulled;
+		temp_enabled = ivsm->enabled;
+		if ((temp_wptr + remain_cnt > ENDPOINT) && (temp_wptr >= temp_rptr)) {
+			printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", temp_wptr, temp_rptr, temp_fulled, remain_cnt);
+
 			puts("(partial-write until endpoint)");
-			to_write = ENDPOINT - ivsm->wptr;
+			to_write = ENDPOINT - temp_wptr;
 			printf("to_write: %lu\n", to_write);
 			
-			memcpy((void *)ivsm + OFFSET + ivsm->wptr, (void*)(buf + processed_byte), to_write);
+			memcpy((void *)ivsm + OFFSET + temp_wptr, (void*)(buf + processed_byte), to_write);
 			remain_cnt -= to_write;
 			processed_byte += to_write;
 
+			// Update Shared Variable
 			if(0 == ivsm->rptr)
 				ivsm->fulled = 1;
-
 			ivsm->wptr = 0;
 
 			continue;
 		}
 
 		// Partial-Write Until Read Pointer
+		temp_rptr = ivsm->rptr;
+		temp_wptr = ivsm->wptr;
+		temp_fulled = ivsm->fulled;
+		temp_enabled = ivsm->enabled;
 		if (ivsm->wptr + remain_cnt > ivsm->rptr && ivsm->wptr < ivsm->rptr) {
-			printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", ivsm->wptr, ivsm->rptr, ivsm->fulled, remain_cnt);
+			printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", temp_wptr, temp_rptr, temp_fulled, remain_cnt);
+
 			puts("(partial-write until read pointer)");
-			to_write = ivsm->rptr - ivsm->wptr;
+			to_write = temp_rptr - temp_wptr;
 			printf("to_write: %lu\n", to_write);
 
-			memcpy((void *)ivsm + OFFSET + ivsm->wptr, (void*)(buf + processed_byte), to_write);
+			memcpy((void *)ivsm + OFFSET + temp_wptr, (void*)(buf + processed_byte), to_write);
 			remain_cnt -= to_write;
 			processed_byte += to_write;
 			
+			// Update Shared Variables
 			ivsm->fulled = 1;
-
-			// 포인터가 엔드 포인트에 도달하면 0으로 변경
-			if (ivsm->wptr + to_write == ENDPOINT)
-				ivsm->wptr = 0;
-			else
-				ivsm->wptr += to_write;
+			ivsm->wptr += to_write;
 			
 			continue;
 		}
 
 		// 마지막 쓰기
-		printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", ivsm->wptr, ivsm->rptr, ivsm->fulled, remain_cnt);
-		puts("(final write stage)");
-		memcpy((void *)ivsm + OFFSET + ivsm->wptr, (void*)(buf + processed_byte), remain_cnt);
-		prev_remain_cnt = remain_cnt;
+		temp_rptr = ivsm->rptr;
+		temp_wptr = ivsm->wptr;
+		temp_fulled = ivsm->fulled;
+		temp_enabled = ivsm->enabled;
+		printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", temp_wptr, temp_rptr, temp_fulled, remain_cnt);
+		puts("(final write)");
+		memcpy((void *)ivsm + OFFSET + temp_wptr, (void*)(buf + processed_byte), remain_cnt);
 
+		prev_remain_cnt = remain_cnt;
 		remain_cnt = 0;
 		
-		if((ivsm->wptr + prev_remain_cnt == ivsm->rptr) || (ivsm->wptr + prev_remain_cnt == ENDPOINT))
+		// Update Shared Variables
+		if((temp_wptr + prev_remain_cnt == temp_rptr) || (temp_wptr + prev_remain_cnt == ENDPOINT))
 			ivsm->fulled = 1;
-
-		// 포인터가 엔드 포인트에 도달하면 0으로 변경
-		if (ivsm->wptr + prev_remain_cnt == ENDPOINT) {
+		if (ivsm->wptr + prev_remain_cnt == ENDPOINT) { // 포인터가 엔드 포인트에 도달하면 0으로 변경
 			puts("(wptr reached endpoint)");
 			ivsm->wptr = 0;
 		} else
 			ivsm->wptr += prev_remain_cnt;
-		printf("ivsm->wtpr: %lu\n", ivsm->wptr);
 	}
 
 	printf("IVSH: WRITE\n");
