@@ -110,12 +110,14 @@ static inline int attach_new_ivsock_to_fd(int fd) {
 
 	// 자기가 write하는 파트의 enabled 비트 끄기
 	fd_to_ivsock_map[fd]->ivsm_addr_write->enabled = 1;
+	fd_to_ivsock_map[fd]->enabled = 1;
 
 
 	return 0;
 }
 static inline int detach_ivsock_from_fd(int fd) {
 	// 모든 파트의 enabled 비트 끄기
+	fd_to_ivsock_map[fd]->enabled = 0;
 	fd_to_ivsock_map[fd]->ivsm_addr_write->enabled = 0;
 	fd_to_ivsock_map[fd]->ivsm_addr_read->enabled = 0;
 
