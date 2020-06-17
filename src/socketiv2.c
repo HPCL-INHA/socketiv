@@ -26,6 +26,12 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 	IVSM *ivsm = ivsock->ivsm_addr_read;
 
 	while (remain_cnt) {
+		// fulled 레이스 컨디션 수정 - 수정 필요할 수 있음
+		if (ivsm->wptr != ivsm->rptr)
+			ivsm->fulled = 0;
+		else
+			ivsm->fulled = 1;
+
 		// Poll
 		while ((ivsm->rptr == ivsm->wptr) && !ivsm->fulled){
 			if(!ivsm->enabled)
@@ -119,6 +125,11 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 	IVSM *ivsm = ivsock->ivsm_addr_write;
 
 	while (remain_cnt) {
+		if (ivsm->wptr != ivsm->rptr)
+			ivsm->fulled = 0;
+		else
+			ivsm->fulled = 1;
+
 		if (!ivsm->enabled)
 			return -1;
 
@@ -147,9 +158,8 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 
 		// Partial-Write Until Read Pointer
 		if (ivsm->wptr + remain_cnt > ivsm->rptr && ivsm->wptr < ivsm->rptr) {
-//		if (ivsm->wptr < ivsm->rptr) {
 			printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", ivsm->wptr, ivsm->rptr, ivsm->fulled, remain_cnt);
-			puts("(partial-write until write pointer)");
+			puts("(partial-write until read pointer)");
 			to_write = ivsm->rptr - ivsm->wptr;
 			printf("to_write: %lu\n", to_write);
 
