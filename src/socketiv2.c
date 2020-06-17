@@ -25,7 +25,9 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 	size_t remain_cnt = count, prev_remain_cnt, processed_byte = 0;
 	IVSM *ivsm = ivsock->ivsm_addr_read;
 
-	size_t temp_rptr, temp_wptr, temp_fulled, temp_enabled; // temporal storage for shared variable
+	// temporal storage for shared variable
+	size_t temp_rptr, temp_wptr;
+	int temp_fulled, temp_enabled;
 
 	while (remain_cnt) {
 		// fulled 레이스 컨디션 수정 - 수정 필요하거나 삭제하게 될 수 있음
@@ -132,7 +134,9 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 	size_t remain_cnt = count, prev_remain_cnt, processed_byte = 0;
 	IVSM *ivsm = ivsock->ivsm_addr_write;
 
-	size_t temp_rptr, temp_wptr, temp_fulled, temp_enabled; // temporal storage for shared variable
+	// temporal storage for shared variable
+	size_t temp_rptr, temp_wptr;
+	int temp_fulled, temp_enabled;
 
 	while (remain_cnt) {
 		// fulled 레이스 컨디션 수정 - 수정 필요하거나 삭제하게 될 수 있음
