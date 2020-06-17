@@ -40,7 +40,7 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 		}
 
 		// Partial-Read Until Endpoint
-		if ((ivsm->rptr > ivsm->wptr) || ivsm->fulled){
+		if ((ivsm->rptr > ivsm->wptr) && (ivsm->rptr + remain_cnt) > ENDPOINT){
 			printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", ivsm->wptr, ivsm->rptr, ivsm->fulled, remain_cnt);
 			printf("count: %lu, processed_byte: %lu, to_read: %lu\n", count, processed_byte, to_read);
 			puts("(partial-read until endpoint)");
@@ -125,6 +125,7 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 	IVSM *ivsm = ivsock->ivsm_addr_write;
 
 	while (remain_cnt) {
+		// fulled 레이스 컨디션 수정 - 수정 필요할 수 있음
 		if (ivsm->wptr != ivsm->rptr)
 			ivsm->fulled = 0;
 		else
