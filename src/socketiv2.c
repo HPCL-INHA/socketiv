@@ -77,7 +77,7 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 		temp_wptr = ivsm->wptr;
 		temp_fulled = ivsm->fulled;
 		temp_enabled = ivsm->enabled;
-		if (temp_rptr + remain_cnt > temp_wptr) {
+		if ((temp_rptr + remain_cnt > temp_wptr) && (temp_rptr < temp_wptr)) {
 			printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", temp_wptr, temp_rptr, temp_fulled, remain_cnt);
 
 			puts("(partial-read until write pointer)");
