@@ -29,6 +29,10 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 	size_t temp_rptr, temp_wptr;
 	int temp_fulled, temp_enabled;
 
+	// Check valid connection
+	if (!ivsm->enabled)
+		return -1;
+
 	while (remain_cnt) {
 		// fulled 레이스 컨디션 수정 - 수정 필요하거나 삭제하게 될 수 있음
 		if (ivsm->wptr != ivsm->rptr)
@@ -39,7 +43,7 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 		// Poll
 		while ((ivsm->rptr == ivsm->wptr) && !ivsm->fulled){
 			if(!ivsm->enabled)
-				return -1;
+				return processed_byte;
 			usleep(SLEEP); // 시간 얼마? or clock_nanosleep()?
 		}
 
@@ -103,6 +107,7 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 		printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", temp_wptr, temp_rptr, temp_fulled, remain_cnt);
 		puts("(final read)");
 		memcpy(buf + processed_byte, (void *)ivsm + OFFSET + temp_rptr, remain_cnt);
+		processed_byte += remain_cnt;
 
 		prev_remain_cnt = remain_cnt;
 		remain_cnt = 0;
@@ -116,9 +121,9 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 			ivsm->rptr += prev_remain_cnt;
 	}
 
-	printf(" IVSH: READ %lu\n", count);
+	printf("IVSH: READ %lu bytes. Completed.\n", processed_byte);
 
-	return count;
+	return processed_byte;
 }
 
 static inline int64_t getmstime(void) {
@@ -138,6 +143,10 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 	size_t temp_rptr, temp_wptr;
 	int temp_fulled, temp_enabled;
 
+	// Check valid connection
+	if (!ivsm->enabled)
+		return -1;
+
 	while (remain_cnt) {
 		// fulled 레이스 컨디션 수정 - 수정 필요하거나 삭제하게 될 수 있음
 		if (ivsm->wptr != ivsm->rptr)
@@ -146,7 +155,7 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 			ivsm->fulled = 1;
 
 		if (!ivsm->enabled)
-			return -1;
+			return processed_byte;
 
 		// Poll
 		while ((ivsm->wptr == ivsm->rptr) && ivsm->fulled)
@@ -213,6 +222,7 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 		printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", temp_wptr, temp_rptr, temp_fulled, remain_cnt);
 		puts("(final write)");
 		memcpy((void *)ivsm + OFFSET + temp_wptr, (void*)(buf + processed_byte), remain_cnt);
+		processed_byte += remain_cnt;
 
 		prev_remain_cnt = remain_cnt;
 		remain_cnt = 0;
@@ -227,8 +237,8 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 			ivsm->wptr += prev_remain_cnt;
 	}
 
-	printf("IVSH: WRITE\n");
+	printf("IVSH: WRITE %lu bytes. Completed.\n", processed_byte);
 
-	return count;
+	return processed_byte;
 }
 
