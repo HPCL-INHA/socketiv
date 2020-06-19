@@ -74,6 +74,7 @@ static void __attribute__((constructor)) socketiv_init() { // initialize SocketI
 	orig_send = (ssize_t (*)(int, const void *, size_t, int))dlsym(RTLD_NEXT, "send");
 	orig_sendto = (ssize_t (*)(int, const void *, size_t, int, const struct sockaddr *, socklen_t))dlsym(RTLD_NEXT, "sendto");
 	orig_close = (int (*)(int))dlsym(RTLD_NEXT, "close");
+	orig_shutdown = (int (*)(int, int))dlsym(RTLD_NEXT, "shutdown");
 }
 
 int attach_new_ivsock_to_fd(int fd) {

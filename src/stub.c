@@ -126,3 +126,14 @@ printf("IVSH: %s++\n", __func__);
 printf("IVSH: %s--\n", __func__);
 	return orig_close(fd);
 }
+
+int shutdown2(int sockfd, int how) { // close socket
+printf("IVSH: %s++\n", __func__);
+	if (socketiv_check_ivsock(sockfd)) {
+		printf("IVSH: %s++++\n", __func__);
+		socketiv_close(sockfd);
+		printf("IVSH: %s----\n", __func__);
+	}
+printf("IVSH: %s--\n", __func__);
+	return orig_shutdown(sockfd, how);
+}

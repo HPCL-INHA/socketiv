@@ -50,3 +50,7 @@ ssize_t sendto2(int sockfd, const void *buf, size_t len, int flags,
 int close2(int fd) { // close socket
 	return orig_close(fd);
 }
+
+int shutdown2(int sockfd, int how) {
+	return orig_shutdown(sockfd, how);
+}

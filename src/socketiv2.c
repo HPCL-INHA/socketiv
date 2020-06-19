@@ -73,6 +73,8 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 			ivsm->fulled = 0;
 			ivsm->rptr = 0;
 
+printf("LOOP %d\n", __LINE__);
+
 			continue;
 		}
 
@@ -95,6 +97,9 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 			// Update Shared Variables
 			ivsm->fulled = 0;
 			ivsm->rptr += to_read;
+
+printf("LOOP %d\n", __LINE__);
+usleep(SLEEP);
 
 			continue;
 		}
@@ -119,6 +124,8 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 			ivsm->rptr = 0;
 		} else
 			ivsm->rptr += prev_remain_cnt;
+
+printf("LOOP %d\n", __LINE__);
 	}
 
 	printf("IVSH: READ %lu bytes. Completed.\n", processed_byte);
@@ -188,6 +195,8 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 				ivsm->fulled = 1;
 			ivsm->wptr = 0;
 
+printf("LOOP %d\n", __LINE__);
+
 			continue;
 		}
 
@@ -211,6 +220,8 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 			ivsm->fulled = 1;
 			ivsm->wptr += to_write;
 			
+printf("LOOP %d\n", __LINE__);
+
 			continue;
 		}
 
@@ -235,6 +246,8 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 			ivsm->wptr = 0;
 		} else
 			ivsm->wptr += prev_remain_cnt;
+printf("LOOP %d\n", __LINE__);
+		usleep(SLEEP);
 	}
 
 	printf("IVSH: WRITE %lu bytes. Completed.\n", processed_byte);

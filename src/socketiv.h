@@ -32,6 +32,7 @@ ssize_t (*orig_send)(int, const void *, size_t, int);
 ssize_t (*orig_sendto)(int, const void *, size_t, int, const struct sockaddr *, socklen_t);
 
 int (*orig_close) (int);
+int (*orig_shutdown) (int, int);
 
 bool socketiv_check_vm_subnet(const struct sockaddr *addr);
 int socketiv_accept(int new_sockfd);
