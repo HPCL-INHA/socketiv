@@ -257,6 +257,7 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 
 	printf("IVSH: WRITE %lu bytes. Completed.\n", processed_byte);
 
+	assert(processed_byte == count);
 	return processed_byte;
 }
 
