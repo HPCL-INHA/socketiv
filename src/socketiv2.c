@@ -1,5 +1,7 @@
 #include "socketiv.h"
 
+#include <assert.h>
+
 #ifdef SOCKETIV_IN_HOST
 //static inline int socketiv_create_ivshmem(int sockfd, 무슨 인자?){
 // 호스트에서 동작하는 라이브러리 - ivshmem 생성}
@@ -130,6 +132,7 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 
 	printf("IVSH: READ %lu bytes. Completed.\n", processed_byte);
 
+	assert(processed_byte == count);
 	return processed_byte;
 }
 
