@@ -106,34 +106,37 @@ printf("IVSH: %s--\n", __func__);
 
 ssize_t sendto2(int sockfd, const void *buf, size_t len, int flags,
 		const struct sockaddr *dest_addr, socklen_t addrlen) {
-printf("IVSH: %s++\n", __func__);
-	if (socketiv_check_ivsock(sockfd)) {
+	printf("IVSH: %s++\n", __func__);
+	if (socketiv_check_ivsock(sockfd))
+	{
 		printf("IVSH: %s++++\n", __func__);
 		printf("IVSH: %s----\n", __func__);
 		return socketiv_write(sockfd, buf, len);
 	}
-printf("IVSH: %s--\n", __func__);
+	printf("IVSH: %s--\n", __func__);
 	return orig_sendto(sockfd, buf, len, flags, dest_addr, addrlen);
 }
 
 int close2(int fd) { // close socket
-printf("IVSH: %s++\n", __func__);
-	if (socketiv_check_ivsock(fd)) {
+	printf("IVSH: %s++\n", __func__);
+	if (socketiv_check_ivsock(fd))
+	{
 		printf("IVSH: %s++++\n", __func__);
 		socketiv_close(fd);
 		printf("IVSH: %s----\n", __func__);
 	}
-printf("IVSH: %s--\n", __func__);
+	printf("IVSH: %s--\n", __func__);
 	return orig_close(fd);
 }
 
 int shutdown2(int sockfd, int how) { // close socket
-printf("IVSH: %s++\n", __func__);
-	if (socketiv_check_ivsock(sockfd)) {
+	printf("IVSH: %s++\n", __func__);
+	if (socketiv_check_ivsock(sockfd))
+	{
 		printf("IVSH: %s++++\n", __func__);
 		socketiv_close(sockfd);
 		printf("IVSH: %s----\n", __func__);
 	}
-printf("IVSH: %s--\n", __func__);
+	printf("IVSH: %s--\n", __func__);
 	return orig_shutdown(sockfd, how);
 }
