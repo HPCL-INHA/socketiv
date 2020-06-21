@@ -73,7 +73,7 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 			ivsm->fulled = 0;
 			ivsm->rptr = 0;
 
-printf("LOOP %d\n", __LINE__);
+			printf("LOOP %d\n", __LINE__);
 
 			continue;
 		}
@@ -98,8 +98,8 @@ printf("LOOP %d\n", __LINE__);
 			ivsm->fulled = 0;
 			ivsm->rptr += to_read;
 
-printf("LOOP %d\n", __LINE__);
-usleep(SLEEP);
+			printf("LOOP %d\n", __LINE__);
+			usleep(SLEEP); // ???
 
 			continue;
 		}
@@ -125,7 +125,7 @@ usleep(SLEEP);
 		} else
 			ivsm->rptr += prev_remain_cnt;
 
-printf("LOOP %d\n", __LINE__);
+		printf("LOOP %d\n", __LINE__);
 	}
 
 	printf("IVSH: READ %lu bytes. Completed.\n", processed_byte);
@@ -195,7 +195,7 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 				ivsm->fulled = 1;
 			ivsm->wptr = 0;
 
-printf("LOOP %d\n", __LINE__);
+			printf("LOOP %d\n", __LINE__);
 
 			continue;
 		}
@@ -219,8 +219,8 @@ printf("LOOP %d\n", __LINE__);
 			// Update Shared Variables
 			ivsm->fulled = 1;
 			ivsm->wptr += to_write;
-			
-printf("LOOP %d\n", __LINE__);
+
+			printf("LOOP %d\n", __LINE__);
 
 			continue;
 		}
@@ -244,10 +244,12 @@ printf("LOOP %d\n", __LINE__);
 		if (temp_wptr + prev_remain_cnt == ENDPOINT) { // 포인터가 엔드 포인트에 도달하면 0으로 변경
 			puts("(wptr reached endpoint)");
 			ivsm->wptr = 0;
-		} else
+		}
+		else
 			ivsm->wptr += prev_remain_cnt;
-printf("LOOP %d\n", __LINE__);
-		usleep(SLEEP);
+
+		printf("LOOP %d\n", __LINE__);
+		usleep(SLEEP); // ???
 	}
 
 	printf("IVSH: WRITE %lu bytes. Completed.\n", processed_byte);
