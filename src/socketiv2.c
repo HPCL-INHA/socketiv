@@ -101,7 +101,7 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 			ivsm->rptr += to_read;
 
 			printf("LOOP %d\n", __LINE__);
-			usleep(SLEEP); // ???
+			//usleep(SLEEP); // ???
 
 			continue;
 		}
@@ -252,7 +252,7 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 			ivsm->wptr += prev_remain_cnt;
 
 		printf("LOOP %d\n", __LINE__);
-		usleep(SLEEP); // ???
+		//usleep(SLEEP); // ???
 	}
 
 	printf("IVSH: WRITE %lu bytes. Completed.\n", processed_byte);
