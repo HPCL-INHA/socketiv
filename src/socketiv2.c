@@ -36,12 +36,6 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 		return -1;
 
 	while (remain_cnt) {
-		// fulled 레이스 컨디션 수정 - 수정 필요하거나 삭제하게 될 수 있음
-		if (ivsm->wptr != ivsm->rptr)
-			ivsm->fulled = 0;
-		else
-			ivsm->fulled = 1;
-
 		// Poll
 		while ((ivsm->rptr == ivsm->wptr) && !ivsm->fulled){
 			if(!ivsm->enabled)
@@ -158,12 +152,6 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 		return -1;
 
 	while (remain_cnt) {
-		// fulled 레이스 컨디션 수정 - 수정 필요하거나 삭제하게 될 수 있음
-		if (ivsm->wptr != ivsm->rptr)
-			ivsm->fulled = 0;
-		else
-			ivsm->fulled = 1;
-
 		if (!ivsm->enabled)
 			return processed_byte;
 
