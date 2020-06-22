@@ -44,7 +44,8 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 	puts("entering...");
 
 	// Check valid connection
-	if (!ivsm->enabled)
+	temp_enabled = ivsm->enabled;
+	if (!temp_enabled)
 		return -1;
 
 	while (remain_cnt) {
