@@ -70,6 +70,10 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 			if(!temp_enabled)
 				return processed_byte;
 			usleep(SLEEP); // 시간 얼마? or clock_nanosleep()?
+			
+			temp_fulled = ivsm->fulled;
+			temp_wptr = ivsm->wptr;
+			temp_rptr = ivsm->rptr;
 		}
 
 		// Partial-Read Until Endpoint
@@ -211,6 +215,10 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 			printf("WPTR: %lu, RPTR: %lu, fulled: %d, enabled: %lu\n", temp_wptr, temp_rptr, temp_fulled, temp_enabled);
 
 			usleep(SLEEP); // 시간 얼마? or clock_nanosleep()?
+
+			temp_fulled = ivsm->fulled;
+			temp_wptr = ivsm->wptr;
+			temp_rptr = ivsm->rptr;
 		}
 
 		// Partial-Write Until Endpoint
