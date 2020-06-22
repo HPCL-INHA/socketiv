@@ -22,6 +22,8 @@ static inline int socketiv_remove_ivshmem(int sockfd) {
 #endif
 
 ssize_t socketiv_read(int fd, void *buf, size_t count) {
+	puts("[SOCKETIVE READ]... ");
+	
 	IVSOCK *ivsock = fd_to_ivsock_map[fd];
 	size_t to_read = 0; // if 문 안에서 처리할 바이트
 	size_t remain_cnt = count, prev_remain_cnt, processed_byte = 0;
@@ -141,6 +143,8 @@ static inline int64_t getmstime(void) {
 }
 
 ssize_t socketiv_write(int fd, const void *buf, size_t count) {
+	puts("[SOCKETIVE WRITE]... ");
+
 	IVSOCK *ivsock = fd_to_ivsock_map[fd];
 	size_t to_write = 0; // if 문 안에서 처리할 바이트
 	size_t remain_cnt = count, prev_remain_cnt, processed_byte = 0;
@@ -157,7 +161,7 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 	while (remain_cnt) {
 		printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", temp_wptr, temp_rptr, temp_fulled, remain_cnt);
 		puts("entering...");
-		
+
 		if (!ivsm->enabled)
 			return processed_byte;
 
