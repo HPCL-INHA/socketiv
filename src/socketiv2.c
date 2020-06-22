@@ -33,14 +33,11 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 	
 	puts("[SOCKETIVE READ]... ");
 	printf("count: %lu, remain_cnt: %lu\n", count, remain_cnt);
+	temp_enabled = ivsm->enabled;
+	temp_fulled = ivsm->fulled;
 	temp_rptr = ivsm->rptr;
 	temp_wptr = ivsm->wptr;
-	temp_fulled = ivsm->fulled;
-	temp_enabled = ivsm->enabled;
-	printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", temp_wptr, temp_rptr, temp_fulled, remain_cnt);
-	printf("[ivsm->enabled]: %d\n", ivsm->enabled);
-	printf("[remain_cnt]: %lu\n", remain_cnt);
-	printf("[processed_byte]: %lu\n", processed_byte);
+	printf("WPTR: %lu, RPTR: %lu, fulled: %d, enabled: %lu\n", temp_wptr, temp_rptr, temp_fulled, temp_enabled);
 	puts("entering...");
 
 	// Check valid connection
@@ -52,11 +49,13 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 		return -1;
 
 	while (remain_cnt) {
-		printf("\n");
-		printf("[ivsm->enabled]: %d\n", ivsm->enabled);
-		printf("[remain_cnt]: %lu\n", remain_cnt);
 		printf("[processed_byte]: %lu\n", processed_byte);
-		printf("\n");
+
+		// try to correct 'fulled' bit
+		temp_rptr = ivsm->rptr;
+		temp_wptr = ivsm->wptr;
+		if (temp_rptr != temp_wptr)
+			ivsm->fulled = 0;
 
 		// Poll
 		temp_fulled = ivsm->fulled;
@@ -173,10 +172,7 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 	temp_wptr = ivsm->wptr;
 	temp_fulled = ivsm->fulled;
 	temp_enabled = ivsm->enabled;
-	printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", temp_wptr, temp_rptr, temp_fulled, remain_cnt);
-	printf("[ivsm->enabled]: %d\n", ivsm->enabled);
-	printf("[remain_cnt]: %lu\n", remain_cnt);
-	printf("[processed_byte]: %lu\n", processed_byte);
+	printf("WPTR: %lu, RPTR: %lu, fulled: %d, enabled: %lu\n", temp_wptr, temp_rptr, temp_fulled, temp_enabled);
 	puts("entering...");
 
 	// Check valid connection
@@ -185,11 +181,13 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 		return -1;
 
 	while (remain_cnt) {
-		printf("\n");
-		printf("[ivsm->enabled]: %d\n", ivsm->enabled);
-		printf("[remain_cnt]: %lu\n", remain_cnt);
 		printf("[processed_byte]: %lu\n", processed_byte);
-		printf("\n");
+		
+		// try to correct 'fulled' bit
+		temp_wptr = ivsm->wptr;
+		temp_rptr = ivsm->rptr;
+		if (temp_wptr != temp_rptr)
+			ivsm->fulled = 0;
 
 		temp_enabled = ivsm->enabled;
 		if (!temp_enabled)
