@@ -38,6 +38,9 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 	temp_fulled = ivsm->fulled;
 	temp_enabled = ivsm->enabled;
 	printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", temp_wptr, temp_rptr, temp_fulled, remain_cnt);
+	printf("[ivsm->enabled]: %d\n", ivsm->enabled);
+	printf("[remain_cnt]: %lu\n", remain_cnt);
+	printf("[processed_byte]: %lu\n", processed_byte);
 	puts("entering...");
 
 	// Check valid connection
@@ -163,6 +166,9 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 	temp_fulled = ivsm->fulled;
 	temp_enabled = ivsm->enabled;
 	printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", temp_wptr, temp_rptr, temp_fulled, remain_cnt);
+	printf("[ivsm->enabled]: %d\n", ivsm->enabled);
+	printf("[remain_cnt]: %lu\n", remain_cnt);
+	printf("[processed_byte]: %lu\n", processed_byte);
 	puts("entering...");
 
 	// Check valid connection
