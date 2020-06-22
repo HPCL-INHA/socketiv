@@ -45,7 +45,10 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 
 	// Check valid connection
 	temp_enabled = ivsm->enabled;
-	if (!temp_enabled)
+	temp_fulled = ivsm->fulled;
+	temp_rptr = ivsm->rptr;
+	temp_wptr = ivsm->wptr;
+	if ((temp_rptr == temp_wptr) && !temp_fulled && !temp_enabled)
 		return -1;
 
 	while (remain_cnt) {
