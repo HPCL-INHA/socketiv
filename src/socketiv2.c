@@ -45,18 +45,18 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 		return -1;
 
 	while (remain_cnt) {
+		printf("\n");
+		printf("[ivsm->enabled]: %d\n", ivsm->enabled);
+		printf("[remain_cnt]: %lu\n", remain_cnt);
+		printf("[processed_byte]: %lu\n", processed_byte);
+		printf("\n");
+
 		// Poll
 		while ((ivsm->rptr == ivsm->wptr) && !ivsm->fulled){
 			if(!ivsm->enabled)
 				return processed_byte;
 			usleep(SLEEP); // 시간 얼마? or clock_nanosleep()?
 		}
-
-		printf("\n");
-		printf("[ivsm->enabled]: %d\n", ivsm->enabled);
-		printf("[remain_cnt]: %lu\n", remain_cnt);
-		printf("[processed_byte]: %lu\n", processed_byte);
-		printf("\n");
 
 		// Partial-Read Until Endpoint
 		temp_rptr = ivsm->rptr;
@@ -170,8 +170,11 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 		return -1;
 
 	while (remain_cnt) {
-		printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", temp_wptr, temp_rptr, temp_fulled, remain_cnt);
-		puts("entering...");
+		printf("\n");
+		printf("[ivsm->enabled]: %d\n", ivsm->enabled);
+		printf("[remain_cnt]: %lu\n", remain_cnt);
+		printf("[processed_byte]: %lu\n", processed_byte);
+		printf("\n");
 
 		if (!ivsm->enabled)
 			return processed_byte;
@@ -179,12 +182,6 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 		// Poll
 		while ((ivsm->wptr == ivsm->rptr) && ivsm->fulled)
 			usleep(SLEEP); // 시간 얼마? or clock_nanosleep()?
-
-		printf("\n");
-		printf("[ivsm->enabled]: %d\n", ivsm->enabled);
-		printf("[remain_cnt]: %lu\n", remain_cnt);
-		printf("[processed_byte]: %lu\n", processed_byte);
-		printf("\n");
 
 		// Partial-Write Until Endpoint
 		temp_rptr = ivsm->rptr;
