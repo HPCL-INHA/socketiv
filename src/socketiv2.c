@@ -36,6 +36,9 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 		return -1;
 
 	while (remain_cnt) {
+		printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", temp_wptr, temp_rptr, temp_fulled, remain_cnt);
+		puts("entering...");
+
 		// Poll
 		while ((ivsm->rptr == ivsm->wptr) && !ivsm->fulled){
 			if(!ivsm->enabled)
@@ -152,6 +155,9 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 		return -1;
 
 	while (remain_cnt) {
+		printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", temp_wptr, temp_rptr, temp_fulled, remain_cnt);
+		puts("entering...");
+		
 		if (!ivsm->enabled)
 			return processed_byte;
 
