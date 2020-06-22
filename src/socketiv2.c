@@ -22,8 +22,6 @@ static inline int socketiv_remove_ivshmem(int sockfd) {
 #endif
 
 ssize_t socketiv_read(int fd, void *buf, size_t count) {
-	puts("[SOCKETIVE READ]... ");
-	
 	IVSOCK *ivsock = fd_to_ivsock_map[fd];
 	size_t to_read = 0; // if 문 안에서 처리할 바이트
 	size_t remain_cnt = count, prev_remain_cnt, processed_byte = 0;
@@ -32,15 +30,21 @@ ssize_t socketiv_read(int fd, void *buf, size_t count) {
 	// temporal storage for shared variable
 	size_t temp_rptr, temp_wptr;
 	int temp_fulled, temp_enabled;
+	
+	puts("[SOCKETIVE READ]... ");
+	printf("count: %lu, remain_cnt: %lu\n", count, remain_cnt);
+	temp_rptr = ivsm->rptr;
+	temp_wptr = ivsm->wptr;
+	temp_fulled = ivsm->fulled;
+	temp_enabled = ivsm->enabled;
+	printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", temp_wptr, temp_rptr, temp_fulled, remain_cnt);
+	puts("entering...");
 
 	// Check valid connection
 	if (!ivsm->enabled)
 		return -1;
 
 	while (remain_cnt) {
-		printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", temp_wptr, temp_rptr, temp_fulled, remain_cnt);
-		puts("entering...");
-
 		// Poll
 		while ((ivsm->rptr == ivsm->wptr) && !ivsm->fulled){
 			if(!ivsm->enabled)
@@ -143,8 +147,6 @@ static inline int64_t getmstime(void) {
 }
 
 ssize_t socketiv_write(int fd, const void *buf, size_t count) {
-	puts("[SOCKETIVE WRITE]... ");
-
 	IVSOCK *ivsock = fd_to_ivsock_map[fd];
 	size_t to_write = 0; // if 문 안에서 처리할 바이트
 	size_t remain_cnt = count, prev_remain_cnt, processed_byte = 0;
@@ -153,6 +155,15 @@ ssize_t socketiv_write(int fd, const void *buf, size_t count) {
 	// temporal storage for shared variable
 	size_t temp_rptr, temp_wptr;
 	int temp_fulled, temp_enabled;
+
+	puts("[SOCKETIVE WRITE]... ");
+	printf("count: %lu, remain_cnt: %lu\n", count, remain_cnt);
+	temp_rptr = ivsm->rptr;
+	temp_wptr = ivsm->wptr;
+	temp_fulled = ivsm->fulled;
+	temp_enabled = ivsm->enabled;
+	printf("WPTR: %lu, RPTR: %lu, fulled: %d, remain_cnt: %lu\n", temp_wptr, temp_rptr, temp_fulled, remain_cnt);
+	puts("entering...");
 
 	// Check valid connection
 	if (!ivsm->enabled)
