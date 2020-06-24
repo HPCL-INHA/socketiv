@@ -1,2 +1,2 @@
 # socketiv
-SocketIV: Socket for Inter-VM
+This repository is for the ongoing paper.
